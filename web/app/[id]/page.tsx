@@ -18,7 +18,7 @@ function ExpiredPage({ title }: { title: string }) {
       <div className="text-center max-w-md">
         <div className="text-4xl mb-4">⏳</div>
         <h1 className="text-xl font-semibold text-white mb-2">{title}</h1>
-        <p className="text-gray-400 mb-6">This download link has expired.</p>
+        <p className="text-gray-400 mb-6">Netflix and Chill with SKDL — but this link has expired.</p>
         <a
           href="https://t.me/SK_DLBOT"
           className="inline-block bg-white text-black font-medium px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors"

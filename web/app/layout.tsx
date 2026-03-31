@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SKDL — Movie & Series Downloads',
-  description: 'Get instant download links for movies and TV series via the SKDL Telegram bot.',
+  title: 'SKDL — Netflix and Chill with SKDL',
+  description: 'Instant movie and series downloads via SKDL.',
 }
 
 export default function RootLayout({

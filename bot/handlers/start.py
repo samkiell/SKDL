@@ -10,7 +10,7 @@ from services.session import clear_session
 
 router = Router()
 
-WELCOME_MESSAGE = """👋 Welcome to SKDL Bot!
+WELCOME_MESSAGE = """🎬 **SKDL — Netflix and Chill with SKDL** 🍿
 
 I can help you download movies and TV series. Just tell me what you want to watch!
 
