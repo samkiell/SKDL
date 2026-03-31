@@ -70,6 +70,19 @@ async def _handle_download_movie(message: Message, intent: dict) -> None:
         )
 
         await status_msg.edit_text(reply, parse_mode="Markdown")
+
+        # Attempt direct file delivery
+        try:
+            from aiogram.types import URLInputFile
+            file_name = f"{result['title']} ({result['year']}) {result['quality']}.mp4"
+            await message.answer_document(
+                URLInputFile(result["cdn_url"], filename=file_name),
+                caption=f"🎬 {result['title']}"
+            )
+        except Exception as e:
+            logger.warning("Direct file delivery failed for '%s': %s", result['title'], e)
+            # We don't notify the user because the link is the primary delivery method
+
         clear_session(message.from_user.id)
 
     except Exception as exc:
@@ -128,6 +141,18 @@ async def _handle_download_series(message: Message, intent: dict) -> None:
         )
 
         await status_msg.edit_text(reply, parse_mode="Markdown")
+
+        # Attempt direct file delivery
+        try:
+            from aiogram.types import URLInputFile
+            file_name = f"{result['title']} S{result['season']}E{result['episode']} {result['quality']}.mp4"
+            await message.answer_document(
+                URLInputFile(result["cdn_url"], filename=file_name),
+                caption=f"📺 {result['title']} S{result['season']}E{result['episode']}"
+            )
+        except Exception as e:
+            logger.warning("Direct file delivery failed for series '%s': %s", result['title'], e)
+
         clear_session(message.from_user.id)
 
     except Exception as exc:
