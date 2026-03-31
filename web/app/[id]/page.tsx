@@ -37,31 +37,23 @@ export default async function LinkPage({
 }) {
   const { id } = await params
 
-  try {
-    const { data, error } = await supabase
-      .from('media')
-      .select('*')
-      .eq('id', id)
-      .single()
+  const { data, error } = await supabase
+    .from('media')
+    .select('*')
+    .eq('id', id)
+    .single()
 
-    if (error || !data) {
-      notFound()
-    }
-
-    const row = data as MediaRow
-    const expiresAt = new Date(row.expires_at)
-    const now = new Date()
-
-    if (expiresAt < now) {
-      return <ExpiredPage title={row.title} />
-    }
-
-    redirect(row.cdn_url)
-  } catch (err) {
-    // redirect() throws a NEXT_REDIRECT error — let it propagate
-    if (err instanceof Error && err.message === 'NEXT_REDIRECT') {
-      throw err
-    }
+  if (error || !data) {
     notFound()
   }
+
+  const row = data as MediaRow
+  const expiresAt = new Date(row.expires_at)
+  const now = new Date()
+
+  if (expiresAt < now) {
+    return <ExpiredPage title={row.title} />
+  }
+
+  redirect(row.cdn_url)
 }
