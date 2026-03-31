@@ -5,3 +5,4 @@ python-dotenv
 nanoid
 moviebox-api
 httpx
+python-dateutil
