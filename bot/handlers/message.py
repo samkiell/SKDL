@@ -60,6 +60,7 @@ async def _handle_download_movie(message: Message, intent: dict) -> None:
             media_type="movie",
             quality=result["quality"],
             requested_by=message.from_user.id,
+            subject_id=result["subject_id"],
         )
 
         reply = (
@@ -131,6 +132,7 @@ async def _handle_download_series(message: Message, intent: dict) -> None:
             season=result["season"],
             episode=result["episode"],
             requested_by=message.from_user.id,
+            subject_id=result["subject_id"],
         )
 
         reply = (

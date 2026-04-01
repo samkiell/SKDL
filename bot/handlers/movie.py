@@ -48,6 +48,7 @@ async def cmd_movie(message: Message) -> None:
             media_type="movie",
             quality=result["quality"],
             requested_by=message.from_user.id,
+            subject_id=result["subject_id"],
         )
 
         reply = (

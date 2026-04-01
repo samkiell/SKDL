@@ -118,6 +118,7 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
             "title": target.title,
             "year": target.releaseDate.year,
             "quality": f"{media_file.resolution}p",
+            "subject_id": target.subjectId,
         }
 
     except Exception as exc:
@@ -171,6 +172,7 @@ async def get_episode(
             "season": season,
             "episode": episode,
             "quality": f"{media_file.resolution}p",
+            "subject_id": target.subjectId,
         }
 
     except Exception as exc:
