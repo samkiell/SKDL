@@ -11,29 +11,19 @@ export async function GET(request: NextRequest) {
   try {
     const isDownloadApi = /\/wefeed-h5-bff\/web\/subject\/download/.test(url)
     const headers = new Headers()
-    const forwardedFor = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
 
+    // Restored from previously working proxy implementation (commit 19f41c4).
     headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')
-
-    // Always spoof the same browser profile for aoneroom-facing requests.
     headers.set('Referer', 'https://fmoviesunblocked.net/')
-    headers.set('Origin', 'https://fmoviesunblocked.net')
+    headers.set('Origin', 'https://h5.aoneroom.com')
     headers.set('Accept', '*/*')
     headers.set('Accept-Language', 'en-US,en;q=0.9')
     headers.set('Connection', 'keep-alive')
-    headers.set('Sec-Fetch-Dest', isDownloadApi ? 'empty' : 'video')
-    headers.set('Sec-Fetch-Mode', 'cors')
+    headers.set('Sec-Fetch-Dest', 'video')
+    headers.set('Sec-Fetch-Mode', 'no-cors')
     headers.set('Sec-Fetch-Site', 'cross-site')
     headers.set('Accept-Encoding', 'identity')
-
-    if (forwardedFor) {
-      headers.set('X-Forwarded-For', forwardedFor)
-    }
-
-    if (!isDownloadApi) {
-      const incomingRange = request.headers.get('range')
-      headers.set('Range', incomingRange || 'bytes=0-')
-    }
+    headers.set('Range', 'bytes=0-')
 
     console.info('[proxy] outgoing', {
       target: url,
