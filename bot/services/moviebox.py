@@ -48,13 +48,13 @@ with the season/episode params passed through.
 from __future__ import annotations
 
 import logging
+from urllib.parse import quote
+
+import httpx
 
 from moviebox_api.v1 import (
     Search,
     Session,
-    DownloadableMovieFilesDetail,
-    DownloadableTVSeriesFilesDetail,
-    resolve_media_file_to_be_downloaded,
 )
 from moviebox_api.v1.constants import SubjectType
 
@@ -66,6 +66,9 @@ logger = logging.getLogger(__name__)
 import os
 os.environ.setdefault("MOVIEBOX_API_HOST_V2", settings.MOVIEBOX_API_HOST_V2)
 
+PROXY_BASE_URL = "https://samkiel.online/api/proxy"
+DOWNLOAD_ENDPOINT = f"https://{settings.MOVIEBOX_API_HOST_V2}/wefeed-h5-bff/web/subject/download"
+
 
 def _normalize_quality(quality: str) -> str:
     """Convert quality string to moviebox-api format (e.g. '1080p' -> '1080P')."""
@@ -75,6 +78,54 @@ def _normalize_quality(quality: str) -> str:
     # Strip trailing P and re-add uppercase
     q = q.rstrip("P") + "P"
     return q
+
+
+def _build_download_url(subject_id: str, season: int, episode: int) -> str:
+    return f"{DOWNLOAD_ENDPOINT}?subjectId={subject_id}&se={season}&ep={episode}"
+
+
+def _build_proxy_url(download_url: str) -> str:
+    return f"{PROXY_BASE_URL}?url={quote(download_url, safe='')}"
+
+
+def _select_download(downloads: list[dict], quality: str) -> dict:
+    norm_quality = _normalize_quality(quality)
+    # Keep BEST semantics as default/fallback when an exact resolution is unavailable.
+    if norm_quality == "BEST":
+        return max(downloads, key=lambda d: int(d.get("resolution") or 0))
+
+    if norm_quality == "WORST":
+        return min(downloads, key=lambda d: int(d.get("resolution") or 0))
+
+    target_resolution = int(norm_quality.rstrip("P"))
+    for item in downloads:
+        if int(item.get("resolution") or 0) == target_resolution:
+            return item
+
+    return max(downloads, key=lambda d: int(d.get("resolution") or 0))
+
+
+async def _fetch_downloads_via_proxy(subject_id: str, season: int, episode: int) -> list[dict]:
+    download_url = _build_download_url(subject_id, season, episode)
+    proxy_url = _build_proxy_url(download_url)
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(proxy_url)
+            response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise RuntimeError(f"Proxy fetch failed for subject {subject_id}: {exc}") from exc
+
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise RuntimeError("Proxy response was not valid JSON for subject/download") from exc
+
+    downloads = payload.get("data", {}).get("downloads", []) if isinstance(payload, dict) else []
+    if not isinstance(downloads, list) or not downloads:
+        raise RuntimeError("No downloads found in proxied subject/download response")
+
+    return downloads
 
 
 async def get_movie(title: str, quality: str = "1080p") -> dict:
@@ -99,25 +150,22 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
 
         target = search_results.first_item
 
-        # Step 2: Get downloadable files metadata
-        detail = DownloadableMovieFilesDetail(session, target)
-        downloadable = await detail.get_content_model()
+        # Step 2: Fetch downloadable metadata through the web proxy.
+        downloads = await _fetch_downloads_via_proxy(target.subjectId, season=0, episode=0)
 
-        if not downloadable.downloads:
-            raise RuntimeError(f"No downloadable files available for '{target.title}'")
+        # Step 3: Resolve quality from the proxied downloads list.
+        selected = _select_download(downloads, quality)
+        cdn_url = str(selected.get("url") or "")
+        if not cdn_url:
+            raise RuntimeError("Selected download entry is missing URL")
 
-        # Step 3: Resolve quality
-        norm_quality = _normalize_quality(quality)
-        media_file = resolve_media_file_to_be_downloaded(norm_quality, downloadable)
-
-        # Step 4: Extract CDN URL — no download happens
-        cdn_url = str(media_file.url)
+        resolution = int(selected.get("resolution") or 0)
 
         return {
             "cdn_url": cdn_url,
             "title": target.title,
             "year": target.releaseDate.year,
-            "quality": f"{media_file.resolution}p",
+            "quality": f"{resolution}p" if resolution > 0 else quality,
             "subject_id": target.subjectId,
         }
 
@@ -150,28 +198,23 @@ async def get_episode(
 
         target = search_results.first_item
 
-        # Step 2: Get downloadable files metadata for specific episode
-        detail = DownloadableTVSeriesFilesDetail(session, target)
-        downloadable = await detail.get_content_model(season=season, episode=episode)
+        # Step 2: Fetch episode downloads through the web proxy.
+        downloads = await _fetch_downloads_via_proxy(target.subjectId, season=season, episode=episode)
 
-        if not downloadable.downloads:
-            raise RuntimeError(
-                f"No downloadable files for '{target.title}' S{season}E{episode}"
-            )
+        # Step 3: Resolve quality from the proxied downloads list.
+        selected = _select_download(downloads, quality)
+        cdn_url = str(selected.get("url") or "")
+        if not cdn_url:
+            raise RuntimeError("Selected episode download entry is missing URL")
 
-        # Step 3: Resolve quality
-        norm_quality = _normalize_quality(quality)
-        media_file = resolve_media_file_to_be_downloaded(norm_quality, downloadable)
-
-        # Step 4: Extract CDN URL — no download happens
-        cdn_url = str(media_file.url)
+        resolution = int(selected.get("resolution") or 0)
 
         return {
             "cdn_url": cdn_url,
             "title": target.title,
             "season": season,
             "episode": episode,
-            "quality": f"{media_file.resolution}p",
+            "quality": f"{resolution}p" if resolution > 0 else quality,
             "subject_id": target.subjectId,
         }
 
