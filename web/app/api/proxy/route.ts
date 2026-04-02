@@ -11,30 +11,35 @@ export async function GET(request: NextRequest) {
   try {
     const isDownloadApi = /\/wefeed-h5-bff\/web\/subject\/download/.test(url)
     const headers = new Headers()
+    const forwardedFor = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
 
     headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')
 
-    if (isDownloadApi) {
-      // subject/download is a JSON API endpoint, not a video stream endpoint.
-      headers.set('Referer', 'https://h5.aoneroom.com/')
-      headers.set('Origin', 'https://h5.aoneroom.com')
-      headers.set('Accept', 'application/json')
-      headers.set('Accept-Language', 'en-US,en;q=0.9')
-    } else {
-      // Video proxy profile.
-      headers.set('Referer', 'https://fmoviesunblocked.net/')
-      headers.set('Origin', 'https://h5.aoneroom.com')
-      headers.set('Accept', '*/*')
-      headers.set('Accept-Language', 'en-US,en;q=0.9')
-      headers.set('Connection', 'keep-alive')
-      headers.set('Sec-Fetch-Dest', 'video')
-      headers.set('Sec-Fetch-Mode', 'no-cors')
-      headers.set('Sec-Fetch-Site', 'cross-site')
-      headers.set('Accept-Encoding', 'identity')
+    // Always spoof the same browser profile for aoneroom-facing requests.
+    headers.set('Referer', 'https://fmoviesunblocked.net/')
+    headers.set('Origin', 'https://fmoviesunblocked.net')
+    headers.set('Accept', '*/*')
+    headers.set('Accept-Language', 'en-US,en;q=0.9')
+    headers.set('Connection', 'keep-alive')
+    headers.set('Sec-Fetch-Dest', isDownloadApi ? 'empty' : 'video')
+    headers.set('Sec-Fetch-Mode', 'cors')
+    headers.set('Sec-Fetch-Site', 'cross-site')
+    headers.set('Accept-Encoding', 'identity')
 
+    if (forwardedFor) {
+      headers.set('X-Forwarded-For', forwardedFor)
+    }
+
+    if (!isDownloadApi) {
       const incomingRange = request.headers.get('range')
       headers.set('Range', incomingRange || 'bytes=0-')
     }
+
+    console.info('[proxy] outgoing', {
+      target: url,
+      isDownloadApi,
+      headers: Object.fromEntries(headers.entries()),
+    })
 
     const response = await fetch(url, { 
       headers,
@@ -42,10 +47,16 @@ export async function GET(request: NextRequest) {
       cache: 'no-store'
     })
 
+    console.info('[proxy] response', {
+      target: url,
+      status: response.status,
+      statusText: response.statusText,
+    })
+
     if (!response.ok) {
         // Log detailed error from CDN if possible for debugging
         const text = await response.text()
-        console.error(`Proxy 403 details: ${text.slice(0, 500)}`)
+        console.error(`[proxy] error body: ${text.slice(0, 500)}`)
         return new NextResponse(`Proxy error: ${response.status} ${response.statusText}`, { status: response.status })
     }
 
@@ -68,7 +79,8 @@ export async function GET(request: NextRequest) {
         'Accept-Ranges': 'bytes', // Enable seeking if the source supports it
       },
     })
-  } catch (err: any) {
-    return new NextResponse(`Proxy failed: ${err.message}`, { status: 500 })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return new NextResponse(`Proxy failed: ${message}`, { status: 500 })
   }
 }
