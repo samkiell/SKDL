@@ -1,5 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 import { getFreshCdnUrl } from '@/lib/moviebox'
 
 interface MediaRow {
@@ -40,6 +40,7 @@ export default async function LinkPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const supabase = getSupabaseClient()
   
   console.log('--- Redirecting Link:', id)
 
