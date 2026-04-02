@@ -9,24 +9,32 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const isDownloadApi = /\/wefeed-h5-bff\/web\/subject\/download/.test(url)
     const headers = new Headers()
-    
-    // Core Stealth Headers
-    headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')
-    headers.set('Referer', 'https://fmoviesunblocked.net/')
-    headers.set('Origin', 'https://h5.aoneroom.com')
-    headers.set('Accept', '*/*')
-    headers.set('Accept-Language', 'en-US,en;q=0.9')
-    headers.set('Connection', 'keep-alive')
-    headers.set('Sec-Fetch-Dest', 'video')
-    headers.set('Sec-Fetch-Mode', 'no-cors')
-    headers.set('Sec-Fetch-Site', 'cross-site')
-    
-    // Force identity encoding to prevent CDN gzip errors on binary data
-    headers.set('Accept-Encoding', 'identity')
 
-    // Initial range request to satisfy some CDNs
-    headers.set('Range', 'bytes=0-')
+    headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')
+
+    if (isDownloadApi) {
+      // subject/download is a JSON API endpoint, not a video stream endpoint.
+      headers.set('Referer', 'https://h5.aoneroom.com/')
+      headers.set('Origin', 'https://h5.aoneroom.com')
+      headers.set('Accept', 'application/json')
+      headers.set('Accept-Language', 'en-US,en;q=0.9')
+    } else {
+      // Video proxy profile.
+      headers.set('Referer', 'https://fmoviesunblocked.net/')
+      headers.set('Origin', 'https://h5.aoneroom.com')
+      headers.set('Accept', '*/*')
+      headers.set('Accept-Language', 'en-US,en;q=0.9')
+      headers.set('Connection', 'keep-alive')
+      headers.set('Sec-Fetch-Dest', 'video')
+      headers.set('Sec-Fetch-Mode', 'no-cors')
+      headers.set('Sec-Fetch-Site', 'cross-site')
+      headers.set('Accept-Encoding', 'identity')
+
+      const incomingRange = request.headers.get('range')
+      headers.set('Range', incomingRange || 'bytes=0-')
+    }
 
     const response = await fetch(url, { 
       headers,
@@ -39,6 +47,16 @@ export async function GET(request: NextRequest) {
         const text = await response.text()
         console.error(`Proxy 403 details: ${text.slice(0, 500)}`)
         return new NextResponse(`Proxy error: ${response.status} ${response.statusText}`, { status: response.status })
+    }
+
+    if (isDownloadApi) {
+      return new NextResponse(response.body, {
+        status: 200,
+        headers: {
+          'Content-Type': response.headers.get('Content-Type') || 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      })
     }
 
     return new NextResponse(response.body, {
