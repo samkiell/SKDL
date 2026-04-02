@@ -43,13 +43,13 @@ with the season/episode params passed through.
 from __future__ import annotations
 
 import logging
+from urllib.parse import quote
+
+import httpx
 
 from moviebox_api.v1 import (
     Search,
     Session,
-    DownloadableMovieFilesDetail,
-    DownloadableTVSeriesFilesDetail,
-    resolve_media_file_to_be_downloaded,
 )
 from moviebox_api.v1.constants import SubjectType
 
@@ -61,6 +61,9 @@ logger = logging.getLogger(__name__)
 import os
 os.environ.setdefault("MOVIEBOX_API_HOST_V2", settings.MOVIEBOX_API_HOST_V2)
 
+AONEROOM_DOWNLOAD_URL = "https://h5.aoneroom.com/wefeed-h5-bff/web/subject/download"
+PROXY_DOWNLOAD_BASE = "https://samkiel.online/api/proxy"
+
 def _normalize_quality(quality: str) -> str:
     """Convert quality string to moviebox-api format (e.g. '1080p' -> '1080P')."""
     q = quality.strip().upper()
@@ -71,18 +74,86 @@ def _normalize_quality(quality: str) -> str:
     return q
 
 
-def _resolve_sdk_media_file(downloadable, quality: str):
+def _extract_quality_value(quality: str) -> int | None:
+    digits = "".join(ch for ch in quality if ch.isdigit())
+    if not digits:
+        return None
     try:
-        return resolve_media_file_to_be_downloaded(_normalize_quality(quality), downloadable)
-    except Exception:
-        # Requested quality may be unavailable; fall back to best available.
-        best = getattr(downloadable, "best_media_file", None)
-        if best is not None:
-            return best
-        downloads = getattr(downloadable, "downloads", None) or []
-        if downloads:
-            return max(downloads, key=lambda d: int(getattr(d, "resolution", 0) or 0))
-        raise
+        return int(digits)
+    except ValueError:
+        return None
+
+
+def _build_proxied_download_url(subject_id: str, season: int, episode: int) -> str:
+    original = (
+        f"{AONEROOM_DOWNLOAD_URL}?subjectId={subject_id}&se={season}&ep={episode}"
+    )
+    return f"{PROXY_DOWNLOAD_BASE}?url={quote(original, safe='')}"
+
+
+async def _fetch_downloads(subject_id: str, season: int, episode: int) -> list[dict]:
+    proxied_url = _build_proxied_download_url(subject_id, season, episode)
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/123.0.0.0 Safari/537.36"
+        ),
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            response = await client.get(proxied_url, headers=headers)
+            response.raise_for_status()
+            payload = response.json()
+    except Exception as exc:
+        raise RuntimeError(f"Failed to fetch download links via proxy: {exc}") from exc
+
+    downloads = payload.get("data", {}).get("downloads", [])
+    if not isinstance(downloads, list) or not downloads:
+        raise RuntimeError("No downloadable links returned by proxy endpoint")
+
+    normalized: list[dict] = []
+    for item in downloads:
+        if not isinstance(item, dict):
+            continue
+        url = item.get("url")
+        resolution = item.get("resolution", 0)
+        if not isinstance(url, str) or not url:
+            continue
+        try:
+            resolution_num = int(resolution or 0)
+        except (TypeError, ValueError):
+            resolution_num = 0
+        normalized.append({"url": url, "resolution": resolution_num})
+
+    if not normalized:
+        raise RuntimeError("Proxy response did not include valid download links")
+
+    return normalized
+
+
+def _select_download(downloads: list[dict], quality: str) -> dict:
+    normalized_quality = _normalize_quality(quality)
+    sorted_downloads = sorted(
+        downloads,
+        key=lambda item: int(item.get("resolution", 0) or 0),
+        reverse=True,
+    )
+
+    if normalized_quality == "BEST":
+        return sorted_downloads[0]
+
+    requested = _extract_quality_value(normalized_quality)
+    if requested is None:
+        return sorted_downloads[0]
+
+    for item in sorted_downloads:
+        if int(item.get("resolution", 0) or 0) == requested:
+            return item
+
+    return sorted_downloads[0]
 
 
 async def get_movie(title: str, quality: str = "1080p") -> dict:
@@ -107,12 +178,11 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
 
         target = search_results.first_item
 
-        # Step 2: Resolve download metadata via SDK only.
-        detail = DownloadableMovieFilesDetail(session, target)
-        downloadable = await detail.get_content_model()
-        media_file = _resolve_sdk_media_file(downloadable, quality)
-        cdn_url = str(media_file.url)
-        resolution = int(media_file.resolution or 0)
+        # Step 2: Resolve downloads through our proxy, never direct aoneroom.
+        downloads = await _fetch_downloads(str(target.subjectId), season=0, episode=0)
+        selected = _select_download(downloads, quality)
+        cdn_url = str(selected["url"])
+        resolution = int(selected.get("resolution", 0) or 0)
 
         if not cdn_url:
             raise RuntimeError("Could not resolve a playable URL for selected movie")
@@ -154,12 +224,13 @@ async def get_episode(
 
         target = search_results.first_item
 
-        # Step 2: Resolve episode download metadata via SDK only.
-        detail = DownloadableTVSeriesFilesDetail(session, target)
-        downloadable = await detail.get_content_model(season=season, episode=episode)
-        media_file = _resolve_sdk_media_file(downloadable, quality)
-        cdn_url = str(media_file.url)
-        resolution = int(media_file.resolution or 0)
+        # Step 2: Resolve downloads through our proxy, never direct aoneroom.
+        downloads = await _fetch_downloads(
+            str(target.subjectId), season=season, episode=episode
+        )
+        selected = _select_download(downloads, quality)
+        cdn_url = str(selected["url"])
+        resolution = int(selected.get("resolution", 0) or 0)
 
         if not cdn_url:
             raise RuntimeError("Could not resolve a playable URL for selected episode")
