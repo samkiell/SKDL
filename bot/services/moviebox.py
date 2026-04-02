@@ -53,6 +53,9 @@ import httpx
 from moviebox_api.v1 import (
     Search,
     Session,
+    DownloadableMovieFilesDetail,
+    DownloadableTVSeriesFilesDetail,
+    resolve_media_file_to_be_downloaded,
 )
 from moviebox_api.v1.constants import SubjectType
 
@@ -103,6 +106,20 @@ def _select_download(downloads: list[dict], quality: str) -> dict:
     return max(downloads, key=lambda d: int(d.get("resolution") or 0))
 
 
+def _resolve_sdk_media_file(downloadable, quality: str):
+    try:
+        return resolve_media_file_to_be_downloaded(_normalize_quality(quality), downloadable)
+    except Exception:
+        # Requested quality may be unavailable; fall back to best available.
+        best = getattr(downloadable, "best_media_file", None)
+        if best is not None:
+            return best
+        downloads = getattr(downloadable, "downloads", None) or []
+        if downloads:
+            return max(downloads, key=lambda d: int(getattr(d, "resolution", 0) or 0))
+        raise
+
+
 async def _fetch_downloads_via_proxy(subject_id: str, season: int, episode: int) -> list[dict]:
     download_url = _build_download_url(subject_id, season, episode)
     proxy_url = _build_proxy_url(download_url)
@@ -151,16 +168,24 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
 
         target = search_results.first_item
 
-        # Step 2: Fetch downloadable metadata through the web proxy.
-        downloads = await _fetch_downloads_via_proxy(target.subjectId, season=0, episode=0)
+        # Step 2: Prefer SDK metadata resolution (handles app-info cookies/session details).
+        resolution = 0
+        cdn_url = ""
+        try:
+            detail = DownloadableMovieFilesDetail(session, target)
+            downloadable = await detail.get_content_model()
+            media_file = _resolve_sdk_media_file(downloadable, quality)
+            cdn_url = str(media_file.url)
+            resolution = int(media_file.resolution or 0)
+        except Exception as sdk_exc:
+            logger.warning("SDK download metadata failed for movie '%s', falling back to proxy: %s", title, sdk_exc)
+            downloads = await _fetch_downloads_via_proxy(target.subjectId, season=0, episode=0)
+            selected = _select_download(downloads, quality)
+            cdn_url = str(selected.get("url") or "")
+            resolution = int(selected.get("resolution") or 0)
 
-        # Step 3: Resolve quality from the proxied downloads list.
-        selected = _select_download(downloads, quality)
-        cdn_url = str(selected.get("url") or "")
         if not cdn_url:
-            raise RuntimeError("Selected download entry is missing URL")
-
-        resolution = int(selected.get("resolution") or 0)
+            raise RuntimeError("Could not resolve a playable URL for selected movie")
 
         return {
             "cdn_url": cdn_url,
@@ -199,16 +224,30 @@ async def get_episode(
 
         target = search_results.first_item
 
-        # Step 2: Fetch episode downloads through the web proxy.
-        downloads = await _fetch_downloads_via_proxy(target.subjectId, season=season, episode=episode)
+        # Step 2: Prefer SDK metadata resolution first.
+        resolution = 0
+        cdn_url = ""
+        try:
+            detail = DownloadableTVSeriesFilesDetail(session, target)
+            downloadable = await detail.get_content_model(season=season, episode=episode)
+            media_file = _resolve_sdk_media_file(downloadable, quality)
+            cdn_url = str(media_file.url)
+            resolution = int(media_file.resolution or 0)
+        except Exception as sdk_exc:
+            logger.warning(
+                "SDK download metadata failed for '%s' S%dE%d, falling back to proxy: %s",
+                title,
+                season,
+                episode,
+                sdk_exc,
+            )
+            downloads = await _fetch_downloads_via_proxy(target.subjectId, season=season, episode=episode)
+            selected = _select_download(downloads, quality)
+            cdn_url = str(selected.get("url") or "")
+            resolution = int(selected.get("resolution") or 0)
 
-        # Step 3: Resolve quality from the proxied downloads list.
-        selected = _select_download(downloads, quality)
-        cdn_url = str(selected.get("url") or "")
         if not cdn_url:
-            raise RuntimeError("Selected episode download entry is missing URL")
-
-        resolution = int(selected.get("resolution") or 0)
+            raise RuntimeError("Could not resolve a playable URL for selected episode")
 
         return {
             "cdn_url": cdn_url,
