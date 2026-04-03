@@ -1,5 +1,7 @@
-import { supabase } from './supabase'
+import { getSupabaseClient } from './supabase'
 import { startOfToday, subDays, format } from 'date-fns'
+
+const supabase = getSupabaseClient()
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +39,7 @@ export async function getDashboardStats() {
     for (let i = 6; i >= 0; i--) {
       const date = subDays(new Date(), i)
       const dayLabel = format(date, 'MMM dd')
-      const count = chartDataRaw?.filter(row => 
+      const count = (chartDataRaw as any[])?.filter((row: any) => 
         format(new Date(row.requested_at), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
       ).length || 0
       
@@ -50,8 +52,8 @@ export async function getDashboardStats() {
       .select('type')
 
     const typesCount = [
-      { name: 'Movies', value: typeData?.filter(r => r.type === 'movie').length || 0 },
-      { name: 'Series', value: typeData?.filter(r => r.type === 'series').length || 0 }
+      { name: 'Movies', value: (typeData as any[])?.filter((r: any) => r.type === 'movie').length || 0 },
+      { name: 'Series', value: (typeData as any[])?.filter((r: any) => r.type === 'series').length || 0 }
     ]
 
     // 6. Recent activity (last 10)

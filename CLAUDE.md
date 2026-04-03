@@ -163,6 +163,7 @@ TMDB_API_KEY
 NEXT_PUBLIC_ADSTERRA_SOCIAL_BAR_SRC
 NEXT_PUBLIC_ADSTERRA_BANNER_TAG
 NEXT_PUBLIC_ADS
+LIGHTHOUSE_PIN
 ```
 
 ### The `/api/proxy` logic:
@@ -257,13 +258,20 @@ Follow this order exactly:
 
 - Do not add Redis (not in MVP scope)
 - Do not add rate limiting (not in MVP scope)
-- Do not add a web dashboard
-- Do not add user authentication
+- Do not add subtitle language selection (default English always)
 - Do not add subtitle language selection (default English always)
 - Do not use webhooks for the bot (use polling for MVP)
 - Do not use `next/image` for external images (not needed)
 - Do not add a public REST API (future scope)
 - Do not install packages outside the approved list without flagging it
+
+---
+
+## Lighthouse Admin
+- Route is `/lighthouse`
+- Auth is cookie-based, PIN from `LIGHTHOUSE_PIN` env var (8-hour session)
+- Protected by middleware (`web/middleware.ts`)
+- All Supabase queries for this page are server-side only via API routes
 
 ---
 
