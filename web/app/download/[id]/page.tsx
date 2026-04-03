@@ -1,21 +1,32 @@
 'use client'
 
 import { useState, useEffect, use } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import AdBanner from '../../components/AdBanner'
 import Link from 'next/link'
 
 export default function DownloadPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const searchParams = useSearchParams()
-  const router = useRouter()
   
   const title = searchParams.get('title') || 'Media'
   const poster = searchParams.get('poster') || ''
+  const type = searchParams.get('type') || 'mp4'
 
   const [counter, setCounter] = useState(10)
   const [loading, setLoading] = useState(false)
+  const [isMuxing, setIsMuxing] = useState(false)
+  const [statusIndex, setStatusIndex] = useState(0)
   const [error, setError] = useState<string | null>(null)
+
+  const statuses = [
+    "Preparing MKV...",
+    "Stitching Bits...",
+    "Muxing Streams...",
+    "Syncing Captions...",
+    "Polishing File...",
+    "Almost Ready..."
+  ]
 
   useEffect(() => {
     if (counter > 0) {
@@ -23,6 +34,16 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
       return () => clearTimeout(timer)
     }
   }, [counter])
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (isMuxing) {
+        interval = setInterval(() => {
+            setStatusIndex((prev) => Math.min(prev + 1, statuses.length - 1))
+        }, 2000)
+    }
+    return () => clearInterval(interval)
+  }, [isMuxing])
 
   const handleGetLink = async () => {
     setLoading(true)
@@ -37,75 +58,153 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         return
       }
 
-      // Safe filename construction
-      let safeFilename = data.title.replace(/[^a-zA-Z0-9.\- _]/g, '').trim()
-      if (data.type === 'series' && data.season && data.episode) {
-        safeFilename += ` - S${data.season.toString().padStart(2, '0')}E${data.episode.toString().padStart(2, '0')}`
-      }
-      safeFilename += ' - SKDL(samkiel.online).mp4'
+      const safeFilename = data.title.replace(/[^a-zA-Z0-9.\- _]/g, '').trim()
+      const displayFilename = data.type === 'series' 
+        ? `${safeFilename} S${data.season?.toString().padStart(2, '0')}E${data.episode?.toString().padStart(2, '0')}`
+        : safeFilename
 
-      const proxyUrl = `/api/proxy?url=${encodeURIComponent(data.url)}&filename=${encodeURIComponent(safeFilename)}&dl=1`
-      
-      // Redirect to proxy to trigger download
+      if (type === 'mkv') {
+        setIsMuxing(true)
+        try {
+            // 1. Resolve subtitles specifically for muxing
+            const subRes = await fetch(`/api/subtitles?query=${encodeURIComponent(displayFilename)}&imdb_id=${data.imdb_id || ''}`)
+            const subData = await subRes.json()
+            
+            const muxRes = await fetch('/api/mux', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    videoUrl: data.url,
+                    subtitleUrl: subData.subtitleUrl || null,
+                    title: displayFilename,
+                    imdbId: data.imdb_id
+                })
+            })
+
+            if (!muxRes.ok) throw new Error('Muxing failed')
+
+            const blob = await muxRes.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `${displayFilename}.mkv`
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+        } catch (err) {
+            console.error('MKV Muxing failed:', err)
+            setError('Failed to mux MKV. Please try MP4 instead.')
+        } finally {
+            setIsMuxing(false)
+            setLoading(false)
+        }
+        return
+      }
+
+      // MP4 Case
+      const downloadName = `${displayFilename}.mp4`
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(data.url)}&filename=${encodeURIComponent(downloadName)}&dl=1`
       window.location.href = proxyUrl
+      setLoading(false)
     } catch (err) {
       console.error('Download fetch error:', err)
-      setError('Failed to generate secure link. Please try again.')
+      setError('Failed to generate link. Try again.')
       setLoading(false)
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-12 pb-24 px-4 font-sans">
-      <div className="w-full max-w-2xl space-y-8 flex flex-col items-center">
+    <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-12 pb-24 px-4 font-sans selection:bg-[#e8ff47]/20">
+      <div className="w-full max-w-2xl space-y-10 flex flex-col items-center">
         
-        {/* Movie Info */}
+        {/* Header / Info */}
         <div className="text-center space-y-4">
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.3em] font-bold">
+              SKDL_MONETIZATION_GATE
+            </span>
+            <h1 className="text-3xl md:text-5xl font-space font-bold tracking-tighter italic text-white uppercase italic">
+              {type === 'mkv' ? 'MKV + SUBS Ready' : 'Download MP4'}
+            </h1>
+          </div>
+          
           {poster && (
-            <div className="w-32 h-48 md:w-40 md:h-60 mx-auto rounded-lg overflow-hidden border border-white/10 shadow-2xl">
-              <img src={poster} alt={title} className="w-full h-full object-cover" />
+            <div className="w-24 h-36 md:w-32 md:h-48 mx-auto rounded-lg overflow-hidden border border-white/5 shadow-2xl relative group">
+              <img src={poster} alt={title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             </div>
           )}
+          
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">{title}</h1>
-            <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest uppercase pb-1">
-              DIRECT_DOWNLOAD_SERVER
+            <p className="text-sm font-medium text-zinc-400 max-w-md mx-auto leading-relaxed">
+              You are about to download <span className="text-white font-bold">{title}</span>. 
+              Please wait for your secure link to be generated.
             </p>
           </div>
         </div>
 
-        {/* Ad Placement */}
-        <AdBanner />
+        {/* Ad Placement - Top */}
+        <div className="w-full border border-white/5 bg-[#0a0a0a] rounded-xl overflow-hidden p-4">
+            <AdBanner />
+        </div>
 
-        {/* Action / Countdown */}
-        <div className="w-full max-w-sm space-y-4">
+        {/* Action / Countdown Center */}
+        <div className="w-full max-w-sm space-y-6">
           {counter > 0 ? (
-            <div className="text-center py-6 border border-white/5 bg-white/5 rounded-xl space-y-2">
-              <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Your link is being prepared...</p>
-              <p className="text-4xl font-space font-bold text-white">{counter}</p>
+            <div className="text-center py-12 border border-dashed border-white/10 bg-white/[0.02] rounded-2xl relative overflow-hidden group">
+              <div className="absolute top-0 left-0 h-1 bg-[#e8ff47] transition-all duration-1000 ease-linear" style={{ width: `${(10 - counter) * 10}%` }} />
+              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">Syncing Server Nodes...</p>
+              <p className="text-6xl font-space font-bold text-white tabular-nums">{counter}</p>
+              <div className="mt-4 flex justify-center gap-1">
+                {[...Array(10)].map((_, i) => (
+                    <div key={i} className={`w-1 h-1 rounded-full ${10 - i > counter ? 'bg-[#e8ff47]' : 'bg-white/10'}`} />
+                ))}
+              </div>
             </div>
           ) : (
             <button
               onClick={handleGetLink}
-              disabled={loading}
-              className="w-full bg-white text-black text-sm font-bold px-6 py-4 rounded-md hover:bg-zinc-200 transition-colors uppercase tracking-widest disabled:opacity-50 disabled:cursor-wait"
+              disabled={loading || isMuxing}
+              className="group relative w-full overflow-hidden bg-white text-black text-sm font-black px-8 py-5 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest disabled:opacity-50 disabled:cursor-wait"
             >
-              {loading ? 'GENERATING SECURE LINK...' : 'GET DOWNLOAD LINK'}
+              <div className="relative z-10 flex items-center justify-center gap-2">
+                {isMuxing ? (
+                    <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>{statuses[statusIndex]}</span>
+                    </>
+                ) : (
+                    <span>{loading ? 'GENERATING LINK...' : 'GET DOWNLOAD LINK'}</span>
+                )}
+              </div>
             </button>
           )}
 
           {error && (
-            <p className="text-red-500 text-xs font-mono text-center pt-2">
-              ERROR: {error}
-            </p>
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-500 text-[10px] font-mono text-center uppercase tracking-widest">
+                    SYSTEM_ERROR: {error}
+                </p>
+            </div>
           )}
 
           <Link
             href={`/${id}`}
-            className="block text-center text-xs font-mono text-zinc-500 hover:text-white transition-colors"
+            className="group block text-center space-y-1"
           >
-            ← CANCEL AND GO BACK
+            <span className="text-[9px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-colors uppercase tracking-[0.2em]">Change your mind?</span>
+            <p className="text-[10px] font-mono text-zinc-400 group-hover:text-white transition-colors uppercase tracking-widest">
+              ← Return to Player
+            </p>
           </Link>
+        </div>
+
+        {/* Ad Placement - Bottom */}
+        <div className="w-full flex justify-center">
+            <div className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest mb-4">Sponsored Advertisement</div>
         </div>
 
       </div>
