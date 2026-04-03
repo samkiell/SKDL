@@ -19,7 +19,7 @@ export default function PlayerClient({ proxyUrl, imdbId, query, poster, onSubtit
   const [showControls, setShowControls] = useState(true)
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null)
   const [isCaptionsOn, setIsCaptionsOn] = useState(true)
-  const controlsTimeout = useRef<NodeJS.Timeout | null>(null)
+  const controlsTimeout = useRef<any>(null)
 
   // Subtitle resolution logic
   useEffect(() => {

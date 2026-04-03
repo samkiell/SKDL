@@ -11,10 +11,10 @@ export async function GET() {
     if (error) throw error
 
     // Map to simple key-value object
-    const settings = (data || []).reduce((acc: Record<string, any>, curr: any) => {
+    const settings = (data || []).reduce((acc: Record<string, any>, curr: { key: string; value: any }) => {
       acc[curr.key] = curr.value
       return acc
-    }, {})
+    }, {} as Record<string, any>)
 
     return NextResponse.json(settings)
   } catch (error: any) {
