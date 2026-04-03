@@ -24,6 +24,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 from services.moviebox import get_episode
 from services.link import generate_id, build_url
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from services.supabase import save_media
 from services.session import clear_session
 
@@ -68,7 +69,16 @@ async def process_series_delivery(message: Message, title: str, season: int, epi
             f"⏳ Link expires in 6 hours"
         )
 
-        await status_msg.edit_text(reply, parse_mode="Markdown")
+        # Build subtitle button
+        subject_id = result.get("subject_id", "0")
+        imdb_id = (result.get("imdb_id") or "0").replace("tt", "")
+        sn = result["season"]
+        ep = result["episode"]
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📥 Download Subtitles", callback_data=f"sb:1:{subject_id}:{imdb_id}:{sn}:{ep}")]
+        ])
+
+        await status_msg.edit_text(reply, parse_mode="Markdown", reply_markup=kb)
 
         # Attempt direct file delivery
         try:

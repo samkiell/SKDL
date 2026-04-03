@@ -257,3 +257,42 @@ async def get_season_episodes(title: str, season: int, quality: str = "1080p") -
     # Filter out None and return ordered list
     valid_episodes = [r for r in results_list if r]
     return sorted(valid_episodes, key=lambda x: x["episode"])
+
+
+async def get_subtitles(subject_id: str, is_series: bool, season: int = 0, episode: int = 0) -> dict | None:
+    """
+    Extract English subtitles from MovieBox SDK.
+    Returns { subtitle_url: str, file_name: str } or None.
+    """
+    session = Session()
+    try:
+        if is_series:
+            # We need to resolve the search item first to use it in Detail
+            # This is a bit redundant but the SDK requires a SearchResultsItem
+            search = Search(session, query=subject_id, subject_type=SubjectType.TV_SERIES, per_page=1)
+            results = await search.get_content_model()
+            if not results.items: return None
+            target = results.first_item
+            detail = DownloadableTVSeriesFilesDetail(session, target)
+            downloadable = await detail.get_content_model(season=season, episode=episode)
+        else:
+            search = Search(session, query=subject_id, subject_type=SubjectType.MOVIES, per_page=1)
+            results = await search.get_content_model()
+            if not results.items: return None
+            target = results.first_item
+            detail = DownloadableMovieFilesDetail(session, target)
+            downloadable = await detail.get_content_model()
+            
+        captions = getattr(downloadable, "captions", []) or []
+        # Find English
+        english = next((c for c in captions if c.lan == "en" or "english" in c.lanName.lower()), None)
+        
+        if english:
+            return {
+                "subtitle_url": str(english.url),
+                "file_name": f"moviebox_en_{subject_id}.srt"
+            }
+    except Exception as exc:
+        logger.error("Failed to extract MovieBox subtitles for %s: %s", subject_id, exc)
+        
+    return None

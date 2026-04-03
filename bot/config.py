@@ -22,6 +22,7 @@ class Settings:
     CDN_TTL_HOURS: int
     MOVIEBOX_API_HOST_V2: str
     MOVIEBOX_DOWNLOAD_API_HOST: str
+    OPENSUBTITLES_API_KEY: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -51,6 +52,7 @@ class Settings:
             CDN_TTL_HOURS=int(os.getenv("CDN_TTL_HOURS", "6")),
             MOVIEBOX_API_HOST_V2=os.getenv("MOVIEBOX_API_HOST_V2", "h5.aoneroom.com"),
             MOVIEBOX_DOWNLOAD_API_HOST=os.getenv("MOVIEBOX_DOWNLOAD_API_HOST", "h5.aoneroom.com"),
+            OPENSUBTITLES_API_KEY=os.getenv("OPENSUBTITLES_API_KEY"),
         )
 
 
