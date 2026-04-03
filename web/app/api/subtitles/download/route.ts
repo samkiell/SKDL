@@ -44,22 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No download link returned' }, { status: 500 });
     }
 
-    // Step 2: Fetch the actual .srt from link and stream it
-    const srtResponse = await fetch(link);
-
-    if (!srtResponse.ok) {
-        return NextResponse.json({ error: 'Failed to fetch subtitle file' }, { status: srtResponse.status });
-    }
-
-    const srtBuffer = await srtResponse.arrayBuffer();
-    const filename = `${release_name || 'subtitle'}.srt`;
-
-    return new Response(srtBuffer, {
-      headers: {
-        'Content-Type': 'text/plain',
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
-      },
-    });
+    return NextResponse.json({ url: link });
 
   } catch (error) {
     console.error('Subtitle download error:', error);

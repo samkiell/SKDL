@@ -32,8 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getSupabaseClient()
-    const { error } = await supabase
-      .from('settings')
+    const { error } = await (supabase.from('settings') as any)
       .upsert({ key, value, updated_at: new Date().toISOString() })
 
     if (error) throw error

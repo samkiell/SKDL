@@ -134,24 +134,23 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-12 pb-24 px-4 font-sans selection:bg-[#e8ff47]/20">
-      <div className="w-full max-w-2xl space-y-10 flex flex-col items-center">
+    <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-4 pb-12 px-4 font-sans selection:bg-[#e8ff47]/20">
+      <div className="w-full max-w-2xl space-y-4 flex flex-col items-center">
         
         {/* Header / Info */}
-        <div className="text-center space-y-4">
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.3em] font-bold">
+        <div className="text-center space-y-1">
+          <div className="flex flex-col items-center">
+            <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-[0.3em] font-medium">
               SKDL_RATE_LIMIT_SYSTEM
             </span>
-            <h1 className="text-3xl md:text-5xl font-space font-bold tracking-tighter text-white uppercase">
+            <h1 className="text-2xl md:text-4xl font-space font-bold tracking-tighter text-white uppercase">
               {type === 'mkv' ? 'MKV + SUBS Ready' : 'Download MP4'}
             </h1>
           </div>
           
           {poster && (
-            <div className="w-24 h-36 md:w-32 md:h-48 mx-auto rounded-lg overflow-hidden border border-white/5 shadow-2xl relative group">
+            <div className="w-20 h-30 md:w-24 md:h-36 mx-auto rounded-lg overflow-hidden border border-white/5 shadow-2xl relative group">
               <img src={poster} alt={title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             </div>
           )}
           
@@ -171,12 +170,12 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         {/* Action / Countdown Center */}
         <div className="w-full max-w-sm space-y-8 flex flex-col items-center">
             {/* Syncing / Ring Section */}
-            <div className="relative w-32 h-32 flex items-center justify-center">
+            <div className="relative w-24 h-24 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90">
                 <circle
-                  cx="64"
-                  cy="64"
-                  r="58"
+                  cx="48"
+                  cy="48"
+                  r="44"
                   stroke="currentColor"
                   strokeWidth="4"
                   fill="transparent"
@@ -190,11 +189,11 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
                   strokeWidth="4"
                   fill="transparent"
                   strokeDasharray="364.4"
-                  strokeDashoffset={364.4 * (counter / 10)}
+                  strokeDashoffset={276.46 * (counter / 10)}
                   className="text-zinc-400 transition-all duration-1000 linear"
                 />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-5xl font-space font-bold text-white tabular-nums">
+              <span className="absolute inset-0 flex items-center justify-center text-3xl font-space font-bold text-white tabular-nums">
                 {counter > 0 ? counter : '✓'}
               </span>
             </div>
