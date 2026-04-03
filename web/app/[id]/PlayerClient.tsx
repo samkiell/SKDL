@@ -17,6 +17,7 @@ export default function PlayerClient({ proxyUrl, imdbId, query, onSubtitleFound 
   const [duration, setDuration] = useState(0)
   const [showControls, setShowControls] = useState(true)
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null)
+  const [isCaptionsOn, setIsCaptionsOn] = useState(true)
   const controlsTimeout = useRef<NodeJS.Timeout | null>(null)
 
   // Subtitle resolution logic
@@ -46,6 +47,17 @@ export default function PlayerClient({ proxyUrl, imdbId, query, onSubtitleFound 
     if (isPlaying) videoRef.current.pause()
     else videoRef.current.play()
     setIsPlaying(!isPlaying)
+  }
+
+  const toggleCaptions = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!videoRef.current) return
+    const tracks = videoRef.current.textTracks
+    if (tracks && tracks.length > 0) {
+        const nextState = !isCaptionsOn
+        tracks[0].mode = nextState ? 'showing' : 'hidden'
+        setIsCaptionsOn(nextState)
+    }
   }
 
   const handleTimeUpdate = () => {
@@ -97,10 +109,11 @@ export default function PlayerClient({ proxyUrl, imdbId, query, onSubtitleFound 
         if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
         if (e.code === 'ArrowRight') { if (videoRef.current) videoRef.current.currentTime += 10; }
         if (e.code === 'ArrowLeft') { if (videoRef.current) videoRef.current.currentTime -= 10; }
+        if (e.code === 'KeyC') { if (videoRef.current) toggleCaptions(e as any); }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isPlaying])
+  }, [isPlaying, isCaptionsOn])
 
   return (
     <div 
@@ -185,6 +198,16 @@ export default function PlayerClient({ proxyUrl, imdbId, query, onSubtitleFound 
             </div>
 
             <div className="flex items-center gap-4">
+                {/* CC Toggle */}
+                {subtitleUrl && (
+                    <button 
+                        onClick={toggleCaptions}
+                        className={`text-xs font-bold px-2 py-1 rounded transition-colors ${isCaptionsOn ? 'bg-[#e8ff47] text-black' : 'bg-white/10 text-white/50 hover:bg-white/20'}`}
+                    >
+                        CC
+                    </button>
+                )}
+
                 <button 
                     onClick={(e) => { e.stopPropagation(); if (videoRef.current) if (document.fullscreenElement) document.exitFullscreen(); else videoRef.current.parentElement?.requestFullscreen(); }}
                     className="text-white/70 hover:text-white"
