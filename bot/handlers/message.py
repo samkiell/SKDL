@@ -132,7 +132,8 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int) -
             logger.warning("Direct file delivery failed for '%s': %s", result['title'], e)
             # We don't notify the user because the link is the primary delivery method
 
-        clear_session(user_id)
+        add_message(user_id, "assistant", f"I just successfully generated a download link and sent the movie: {result['title']} ({result['year']}) in {result['quality']}.")
+        clear_pending_request(user_id)
 
     except Exception as exc:
         logger.error("Movie download failed: %s", exc)
@@ -210,7 +211,8 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int) 
         except Exception as e:
             logger.warning("Direct file delivery failed for series '%s': %s", result['title'], e)
 
-        clear_session(user_id)
+        add_message(user_id, "assistant", f"I just successfully generated a download link and sent the series episode: {result['title']} Season {result['season']} Episode {result['episode']} in {result['quality']}.")
+        clear_pending_request(user_id)
 
     except Exception as exc:
         logger.error("Series download failed: %s", exc)
