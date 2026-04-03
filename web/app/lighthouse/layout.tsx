@@ -42,11 +42,11 @@ export default function LighthouseLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-zinc-400 font-sans selection:bg-blue-500/30 overflow-hidden">
+    <div className="flex min-h-screen bg-[#050505] text-zinc-400 font-sans selection:bg-white/10 overflow-hidden">
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-white/5 bg-black/80 backdrop-blur-md z-50 flex items-center justify-between px-6">
         <div className="flex items-center gap-2">
-          <Zap className="w-5 h-5 text-blue-500 fill-blue-500" />
+          <Zap className="w-5 h-5 text-white fill-white" />
           <span className="font-space font-bold tracking-tighter text-white text-lg">LIGHTHOUSE</span>
         </div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-white">
@@ -62,8 +62,8 @@ export default function LighthouseLayout({
         <div className="flex flex-col h-full">
           <div className="p-8 pb-12">
             <Link href="/lighthouse" className="flex items-center gap-3 px-2 group">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
-                <Zap className="w-6 h-6 text-blue-500 fill-blue-500" />
+              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-300 group-hover:bg-white/10 shadow-[0_0_20px_rgba(255,255,255,0.02)]">
+                <Zap className="w-6 h-6 text-white fill-white" />
               </div>
               <div className="flex flex-col">
                 <span className="font-space font-bold tracking-tighter text-white text-xl uppercase leading-none">Lighthouse</span>
@@ -83,14 +83,14 @@ export default function LighthouseLayout({
                   className={`
                     flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 relative group
                     ${isActive 
-                      ? 'bg-blue-500/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.05)]' 
-                      : 'hover:bg-white/[0.03] hover:text-zinc-200 border border-transparent'}
+                      ? 'bg-white/5 text-white border border-white/10' 
+                      : 'hover:bg-white/[0.02] hover:text-zinc-200 border border-transparent'}
                   `}
                 >
-                  <item.icon className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-blue-500' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
+                  <item.icon className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-white' : 'text-zinc-600 group-hover:text-zinc-300'}`} />
                   <span className={`text-[11px] font-bold tracking-[0.1em] uppercase ${isActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}`}>{item.name}</span>
                   {isActive && (
-                    <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+                    <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
                   )}
                 </Link>
               )
@@ -102,8 +102,8 @@ export default function LighthouseLayout({
               onClick={handleLogout}
               className="flex items-center gap-4 px-4 py-3.5 rounded-2xl w-full hover:bg-zinc-900 group transition-all duration-300 border border-transparent hover:border-white/5"
             >
-              <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-500 transition-colors">
-                <Lock className="w-4 h-4 text-zinc-600 group-hover:text-red-500" />
+              <div className="w-8 h-8 rounded-lg bg-zinc-900 flex items-center justify-center group-hover:bg-white/5 group-hover:text-white transition-colors">
+                <Lock className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400" />
               </div>
               <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-zinc-600 group-hover:text-zinc-400">Lock Terminal</span>
             </button>

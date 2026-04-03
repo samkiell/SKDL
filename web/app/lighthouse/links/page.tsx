@@ -58,16 +58,16 @@ export default function LinksPage() {
       <header className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-4xl font-space font-bold tracking-tighter text-white uppercase italic">Central Registry</h1>
+            <h1 className="text-4xl font-space font-bold tracking-tighter text-white uppercase">Central Registry</h1>
             <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-[0.4em] font-bold">Signal Log Distribution Database</p>
           </div>
           <div className="flex items-center gap-4 bg-[#080808] px-6 py-3 rounded-2xl border border-white/5 font-mono text-[10px] uppercase tracking-widest text-zinc-600 font-bold">
-            Total Valid Records: <span className="text-blue-500">{total}</span>
+            Total Valid Records: <span className="text-white">{total}</span>
           </div>
         </div>
 
         <div className="relative group max-w-xl">
-          <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-500">
+          <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none transition-colors group-focus-within:text-white">
             <Search className="w-4 h-4 text-zinc-600" />
           </div>
           <input
@@ -75,12 +75,12 @@ export default function LinksPage() {
             placeholder="Search by Transmission ID or Subject Title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#080808] border border-white/5 rounded-3xl py-5 pl-14 pr-8 text-xs text-zinc-300 focus:outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500/30 transition-all font-mono uppercase tracking-[0.1em] placeholder:text-zinc-700"
+            className="w-full bg-[#080808] border border-white/5 rounded-3xl py-5 pl-14 pr-8 text-xs text-zinc-300 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/20 transition-all font-mono uppercase tracking-[0.1em] placeholder:text-zinc-700"
           />
         </div>
       </header>
 
-      <div className="rounded-[2.5rem] bg-[#080808] border border-white/5 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      <div className="rounded-xl bg-[#080808] border border-white/5 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left min-w-[800px]">
             <thead>
@@ -101,23 +101,23 @@ export default function LinksPage() {
                 </tr>
               ) : links.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-32 text-center text-zinc-800 font-mono text-[10px] uppercase tracking-[0.5em] font-bold italic">
+                  <td colSpan={5} className="p-32 text-center text-zinc-800 font-mono text-[10px] uppercase tracking-[0.5em] font-bold">
                     Log Clear / No Signals Detected
                   </td>
                 </tr>
               ) : links.map((link) => (
                 <tr key={link.id} className="group hover:bg-white/[0.02] transition-all duration-300">
                   <td className="p-10 align-middle">
-                    <span className="font-mono text-[11px] text-zinc-600 font-bold transition-all group-hover:text-blue-500 uppercase tracking-tighter">{link.id}</span>
+                    <span className="font-mono text-[11px] text-zinc-600 font-bold transition-all group-hover:text-white uppercase tracking-tighter">{link.id}</span>
                   </td>
                   <td className="p-10 align-middle">
                     <div className="space-y-2">
                       <p className="text-sm font-bold text-zinc-200 tracking-tight leading-none group-hover:text-white transition-colors">{link.title}</p>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest border border-current opacity-60 ${link.type === 'movie' ? 'text-blue-400' : 'text-indigo-400'}`}>
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest border border-white/10 text-zinc-400 group-hover:text-white transition-colors`}>
                           {link.type === 'movie' ? 'Film' : 'Series'}
                         </span>
-                        <span className="text-[9px] text-zinc-700 font-mono uppercase tracking-widest font-bold italic">{link.quality}</span>
+                        <span className="text-[9px] text-zinc-700 font-mono uppercase tracking-widest font-bold">{link.quality}</span>
                         {link.season && (
                           <span className="text-[9px] text-zinc-600 font-mono uppercase font-bold tracking-tighter">
                             S{link.season.toString().padStart(2, '0')}E{link.episode.toString().padStart(2, '0')}
@@ -131,7 +131,7 @@ export default function LinksPage() {
                       <p className="text-[10px] text-zinc-500 font-mono font-bold tracking-tighter">
                         {format(new Date(link.requested_at), 'yyyy/MM/dd')}
                       </p>
-                      <p className="text-[10px] text-zinc-700 font-mono uppercase tracking-[0.1em] font-bold italic">
+                      <p className="text-[10px] text-zinc-700 font-mono uppercase tracking-[0.1em] font-bold">
                         {format(new Date(link.requested_at), 'HH:mm:ss')}
                       </p>
                     </div>
@@ -142,7 +142,7 @@ export default function LinksPage() {
                         {format(new Date(link.expires_at), 'yyyy/MM/dd')}
                       </p>
                       <div className="flex items-center gap-1.5 font-mono text-[9px] text-zinc-700 font-bold uppercase tracking-widest">
-                         <div className="w-1 h-1 rounded-full bg-blue-500 opacity-30" />
+                         <div className="w-1 h-1 rounded-full bg-white opacity-30" />
                          {format(new Date(link.expires_at), 'HH:mm:ss')}
                       </div>
                     </div>
@@ -153,7 +153,7 @@ export default function LinksPage() {
                         href={`/${link.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-10 h-10 bg-zinc-900 border border-white/5 rounded-xl flex items-center justify-center hover:bg-blue-500/10 hover:border-blue-500/20 hover:text-blue-500 transition-all duration-300 hover:scale-110 active:scale-95"
+                        className="w-10 h-10 bg-zinc-900 border border-white/5 rounded-xl flex items-center justify-center hover:bg-white/5 hover:border-white/20 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
@@ -217,11 +217,11 @@ export default function LinksPage() {
           <div className="hidden lg:flex flex-col items-end gap-2 pr-4">
             <div className="flex gap-1 h-0.5 w-40 bg-zinc-900 overflow-hidden">
                <div 
-                 className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] transition-all duration-1000 ease-[cubic-bezier(0.2,0,0,1)]" 
+                 className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.3)] transition-all duration-1000 ease-[cubic-bezier(0.2,0,0,1)]" 
                  style={{ width: `${(page / Math.ceil(total / 25)) * 100}%` }} 
                />
             </div>
-            <span className="text-[8px] font-mono text-zinc-800 uppercase tracking-widest font-bold italic tracking-[0.4em]">Signal Buffer Monitor</span>
+            <span className="text-[8px] font-mono text-zinc-800 uppercase tracking-widest font-bold tracking-[0.4em]">Signal Buffer Monitor</span>
           </div>
         </div>
       </div>
