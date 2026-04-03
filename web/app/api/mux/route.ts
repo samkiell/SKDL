@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     // Run FFmpeg command
     // ffmpeg -i video.mp4 -i subs.srt -c copy -c:s srt output.mkv
-    return new Promise((resolve) => {
+    return new Promise<Response>((resolve) => {
         const ffmpeg = spawn(ffmpegPath, [
             '-i', videoFile,
             '-i', subtitleFile,
