@@ -264,13 +264,15 @@ async def handle_message(message: Message) -> None:
 
     match intent["intent"]:
         case "download_movie":
-            if not await check_rate_limit(user_id):
+            username = (message.from_user.username or "").lower()
+            if username not in ["samkiell", "samkiel488"] and not await check_rate_limit(user_id):
                 await message.answer("⚠️ whoa there big watcher, you've hit your daily limit of 10 movies. touch some grass and try again tomorrow!")
                 return
             await _handle_download_movie(message, intent, user_id)
 
         case "download_series":
-            if not await check_rate_limit(user_id):
+            username = (message.from_user.username or "").lower()
+            if username not in ["samkiell", "samkiel488"] and not await check_rate_limit(user_id):
                 await message.answer("⚠️ whoa there binge-watcher, you've hit your daily limit of 10 episodes. touch some grass and try again tomorrow!")
                 return
             await _handle_download_series(message, intent, user_id)
