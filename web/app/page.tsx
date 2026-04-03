@@ -142,7 +142,7 @@ export default function LandingPage() {
           </div>
           <div className={`${styles.featureCard} ${styles.reveal}`}>
             <div className={styles.featureIcon}>03</div>
-            <h3 className={styles.featureTitle}>PRO MEDIA FORMATS</h3>
+            <h3 className={styles.featureTitle}>Full Setup</h3>
             <p className={styles.featureDesc}>
               Full MKV support with integrated subtitles. Our download engine automatically processes accurate subs, delivering a single high-quality file ready for any device.
             </p>
