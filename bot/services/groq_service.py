@@ -88,7 +88,7 @@ If the user is greeting you, asking who you are, or chatting rather than request
 - Put your conversational reply in the "chat_response" JSON key.
 - Never say "As an AI language model..." or "I don't have feelings but..."
 - Speak like a knowledgeable friend, not a customer support bot.
-- Always redirect them toward requesting a movie or using the portal: https://samkiel.online"""
+- Only mention the web portal link (https://samkiel.online) if the user explicitly asks for a website or browser link."""
 
 FALLBACK_INTENT: dict = {
     "intent": "chat",
