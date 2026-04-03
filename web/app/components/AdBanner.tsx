@@ -22,10 +22,10 @@ export default function AdBanner() {
   if (!adTag) return null
 
   return (
-    <div className="flex flex-col items-center gap-2 my-4">
+    <div className="flex flex-col items-center gap-1 my-1">
       <div 
         ref={adRef} 
-        className="ad-wrapper flex justify-center w-full min-h-[50px] md:min-h-[200px] overflow-hidden" 
+        className="ad-wrapper flex justify-center w-full min-h-[20px] md:min-h-[150px] overflow-hidden" 
         aria-hidden="true" 
       />
       <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">

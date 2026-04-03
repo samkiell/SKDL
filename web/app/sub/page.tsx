@@ -98,7 +98,7 @@ export default function SubtitlesPage() {
   return (
     <main className="flex-1 w-full bg-black min-h-screen">
       {/* Hero Section */}
-      <section className="relative pt-8 pb-10 px-4 md:px-8 border-b border-white/5 overflow-hidden">
+      <section className="relative pt-6 pb-4 px-4 md:px-8 border-b border-white/5 overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl blur-[100px] bg-gradient-to-tr from-zinc-800 to-transparent"></div>
         </div>
@@ -111,20 +111,20 @@ export default function SubtitlesPage() {
                 <p className="font-mono text-zinc-500 text-xs md:text-sm uppercase tracking-[0.3em]">
                     Direct access to millions of subtitle files
                 </p>
-                <div className="pt-4">
+                <div className="pt-2">
                   <SubtitleSearch onSearch={handleSearch} isLoading={isLoading} />
                 </div>
             </div>
 
-            <div className="w-full md:w-auto opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
+            <div className="w-full md:w-auto opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all scale-75 md:scale-100 origin-center md:origin-right">
                 <AdBanner />
             </div>
         </div>
       </section>
 
       {/* Results Section */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        <div className="mb-6">
+      <section className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+        <div className="mb-2">
             <AdBanner />
         </div>
         
