@@ -1,7 +1,5 @@
-import { getSupabaseClient } from './supabase'
+import { supabase } from './supabase'
 import { startOfToday, subDays, format } from 'date-fns'
-
-const supabase = getSupabaseClient()
 
 export const dynamic = 'force-dynamic'
 
@@ -36,11 +34,14 @@ export async function getDashboardStats() {
 
     // Group by day for the last 7 days including today
     const chartData: { date: string; count: number }[] = []
+    const rawData = (chartDataRaw || []) as any[]
+    
     for (let i = 6; i >= 0; i--) {
       const date = subDays(new Date(), i)
       const dayLabel = format(date, 'MMM dd')
-      const count = (chartDataRaw as any[])?.filter((row: any) => 
-        format(new Date(row.requested_at), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      const targetDateStr = format(date, 'yyyy-MM-dd')
+      const count = rawData.filter((row: any) => 
+        format(new Date(row.requested_at), 'yyyy-MM-dd') === targetDateStr
       ).length || 0
       
       chartData.push({ date: dayLabel, count })
@@ -51,9 +52,10 @@ export async function getDashboardStats() {
       .from('media')
       .select('type')
 
+    const rawTypeData = (typeData || []) as any[]
     const typesCount = [
-      { name: 'Movies', value: (typeData as any[])?.filter((r: any) => r.type === 'movie').length || 0 },
-      { name: 'Series', value: (typeData as any[])?.filter((r: any) => r.type === 'series').length || 0 }
+      { name: 'Movies', value: rawTypeData.filter((r: any) => r.type === 'movie').length || 0 },
+      { name: 'Series', value: rawTypeData.filter((r: any) => r.type === 'series').length || 0 }
     ]
 
     // 6. Recent activity (last 10)

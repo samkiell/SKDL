@@ -22,3 +22,5 @@ export function getSupabaseClient() {
   cachedClient = createClient(supabaseUrl, supabaseKey)
   return cachedClient
 }
+
+export const supabase = getSupabaseClient()
