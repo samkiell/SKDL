@@ -12,7 +12,15 @@ export async function getFreshCdnUrl(
   season: number = 0,
   episode: number = 0
 ): Promise<string> {
-  const url = `https://${API_HOST}/wefeed-h5-bff/web/subject/download?subjectId=${subjectId}&se=${season}&ep=${episode}`
+  // If season and episode are both 0, treat it as a movie download path
+  const isMoviePath = type === 'movie' || (season === 0 && episode === 0);
+  
+  let url = `https://${API_HOST}/wefeed-h5-bff/web/subject/download?subjectId=${subjectId}`
+  
+  // Only pass se and ep for series episodes (not for movies or the 0/0 case)
+  if (!isMoviePath) {
+    url += `&se=${season}&ep=${episode}`
+  }
   
   const headers = {
     'Referer': `${REFERER_BASE}/`,

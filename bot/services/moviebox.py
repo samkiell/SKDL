@@ -135,7 +135,10 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
 async def get_available_qualities(title: str, is_series: bool, season: int | None = None, episode: int | None = None) -> dict:
     session = Session()
     try:
-        if is_series:
+        # Guard: if se and ep are both 0, treat it as a movie
+        is_actually_series = is_series and not (season == 0 and episode == 0)
+
+        if is_actually_series:
             search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=1)
             results = await search.get_content_model()
             if not results.items: return {}
@@ -181,6 +184,10 @@ async def get_episode(
     session = Session()
 
     try:
+        # Guard: if se and ep are both 0, treat it as a movie
+        if season == 0 and episode == 0:
+            return await get_movie(title, quality)
+
         # Step 1: Search for TV series
         search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=10)
         search_results = await search.get_content_model()
