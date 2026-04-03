@@ -96,7 +96,7 @@ export default function SubtitlesPage() {
                     FIND YOUR <span className="text-zinc-500">SUBTITLES</span>
                 </h1>
                 <p className="font-mono text-zinc-500 text-xs md:text-sm uppercase tracking-[0.3em] max-w-2xl mx-auto">
-                    Direct access to millions of subtitle files powered by OpenSubtitles API v1.
+                    Direct access to millions of subtitle files
                 </p>
             </div>
 
