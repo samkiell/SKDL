@@ -50,13 +50,25 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/media/${id}`)
-      const data = await res.json()
-      
-      if (data.error) {
-        setError(data.error)
-        setLoading(false)
-        return
+      let data;
+      const externalUrl = searchParams.get('url');
+
+      if (id === 'srt' && type === 'srt' && externalUrl) {
+         // Direct subtitle routing bypass
+         data = {
+            title: title,
+            url: externalUrl,
+            type: 'srt'
+         }
+      } else {
+        const res = await fetch(`/api/media/${id}`)
+        data = await res.json()
+        
+        if (data.error) {
+          setError(data.error)
+          setLoading(false)
+          return
+        }
       }
 
       const safeFilename = data.title.replace(/[^a-zA-Z0-9.\- _]/g, '').trim()
@@ -64,6 +76,14 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         ? `${safeFilename} S${data.season?.toString().padStart(2, '0')}E${data.episode?.toString().padStart(2, '0')}`
         : safeFilename
       const brandedFilename = displayFilename + ' - SKDL (samkiel.online)'
+
+      if (data.type === 'srt') {
+         const downloadName = `${brandedFilename}.srt`
+         const proxyUrl = `/api/proxy?url=${encodeURIComponent(data.url)}&filename=${encodeURIComponent(downloadName)}&dl=1`
+         window.location.href = proxyUrl
+         setLoading(false)
+         return
+      }
 
       if (type === 'mkv') {
         setIsMuxing(true)

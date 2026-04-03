@@ -58,40 +58,30 @@ export default function SubtitlesPage() {
   const handleDownload = async (result: SubtitleResult) => {
     try {
       const release_name = result.release_name;
+      let subtitleUrl = result.subtitleUrl;
 
-      // Handle MovieBox direct proxy download
-      if (result.subtitleUrl) {
-          const downloadUrl = `/api/proxy?url=${encodeURIComponent(result.subtitleUrl)}&filename=${encodeURIComponent(release_name)}.srt&dl=1`;
-          window.location.href = downloadUrl;
-          setSelectedResult(null);
-          return;
+      // If no direct URL, we need to fetch it from the API first
+      if (!subtitleUrl) {
+          const res = await fetch('/api/subtitles/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file_id: result.file_id, release_name }),
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to download subtitle');
+          }
+
+          const data = await res.json();
+          subtitleUrl = data.url; // Assuming API returns the URL for routing
       }
 
-      const res = await fetch('/api/subtitles/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_id: result.file_id, release_name }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to download subtitle');
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${release_name}.srt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      // Close modal after download begins
+      const redirectUrl = `/download/srt?type=srt&title=${encodeURIComponent(release_name)}&url=${encodeURIComponent(subtitleUrl)}`;
+      window.location.href = redirectUrl;
       setSelectedResult(null);
     } catch (err: any) {
-      alert(err.message || 'Failed to download subtitle.');
+      alert(err.message || 'Failed to process subtitle download.');
     }
   };
 
