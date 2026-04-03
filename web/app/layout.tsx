@@ -55,9 +55,19 @@ export default function RootLayout({
           {children}
         </div>
 
-        <footer className="w-full border-t border-white/10 bg-black py-8 mt-auto">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 justify-center text-center text-xs font-mono text-zinc-600">
-            &copy; {new Date().getFullYear()} SKDL. All rights reserved.
+        <footer className="w-full border-t border-white/5 bg-black py-12 mt-auto">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6">
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+              <Link href="/privacy" className="hover:text-[#e8ff47] transition-colors">Privacy Policy</Link>
+              <Link href="/terms" className="hover:text-[#e8ff47] transition-colors">Terms of Use</Link>
+              <a href="https://t.me/SK_DLBOT" target="_blank" rel="noopener noreferrer" className="hover:text-[#e8ff47] transition-colors">Support Bot</a>
+            </div>
+            
+            <div className="text-center text-[10px] font-mono text-zinc-700 uppercase tracking-widest">
+              &copy; {new Date().getFullYear()} SKDL. Built by <a href="https://samkiel.dev" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors underline underline-offset-4 decoration-zinc-800">SAMKIEL</a>. 
+              <br />
+              All rights reserved.
+            </div>
           </div>
         </footer>
       </body>
