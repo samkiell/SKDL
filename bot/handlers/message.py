@@ -247,7 +247,7 @@ async def handle_message(message: Message) -> None:
             downloaded_file = await message.bot.download_file(file_info.file_path)
             
             # Encode downloaded bytes to base64
-            image_base64 = base64.b64encode(downloaded_file.read()).decode('utf-8')
+            image_base64 = base64.b64encode(downloaded_file.getvalue()).decode('utf-8')
             
             await status_msg.delete()
         except Exception as e:

@@ -131,7 +131,7 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
                 }
             ]
         })
-        model_name = "llama-3.2-90b-vision-preview"
+        model_name = "llama-3.2-11b-vision-preview"
     else:
         messages.append({"role": "user", "content": user_message})
         model_name = "llama-3.3-70b-versatile"
@@ -194,7 +194,8 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
         }
 
     except json.JSONDecodeError as exc:
-        logger.error("Groq returned invalid JSON: %s", exc)
+        logger.error("Groq returned invalid JSON for %s: %s", model_name, exc)
+        logger.error("RAW Content: %s", raw if 'raw' in locals() else "Unknown")
         return FALLBACK_INTENT.copy()
     except Exception as exc:
         logger.error("Groq API call failed: %s", exc)
