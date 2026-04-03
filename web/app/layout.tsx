@@ -73,6 +73,19 @@ export default function RootLayout({
             strategy="afterInteractive"
           />
         )}
+        
+        {process.env.NEXT_PUBLIC_ADS === 'ON' && process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER && (
+          <Script
+            id="adsterra-popunder"
+            strategy="afterInteractive"
+            src={process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER.match(/src="([^"]+)"/)?.[1]}
+            dangerouslySetInnerHTML={
+              !process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER.includes('src=') 
+                ? { __html: process.env.NEXT_PUBLIC_ADSTERRA_POPUNDER.replace(/<script[^>]*>/, '').replace(/<\/script>/, '') }
+                : undefined
+            }
+          />
+        )}
       </body>
     </html>
   )

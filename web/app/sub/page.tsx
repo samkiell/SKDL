@@ -4,6 +4,7 @@ import { useState } from 'react';
 import SubtitleSearch from './components/SubtitleSearch';
 import SubtitleCard from './components/SubtitleCard';
 import DownloadModal from './components/DownloadModal';
+import AdBanner from '../components/AdBanner';
 
 interface SubtitleResult {
   id: string;
@@ -102,22 +103,31 @@ export default function SubtitlesPage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl blur-[100px] bg-gradient-to-tr from-zinc-800 to-transparent"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto relative z-10 space-y-8 text-center">
-            <div className="space-y-4">
+        <div className="max-w-7xl mx-auto relative z-10 space-y-8 text-center flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="space-y-4 text-center md:text-left flex-1">
                 <h1 className="text-4xl md:text-6xl font-space font-bold tracking-tighter text-white">
                     FIND YOUR <span className="text-zinc-500">SUBTITLES</span>
                 </h1>
-                <p className="font-mono text-zinc-500 text-xs md:text-sm uppercase tracking-[0.3em] max-w-2xl mx-auto">
+                <p className="font-mono text-zinc-500 text-xs md:text-sm uppercase tracking-[0.3em]">
                     Direct access to millions of subtitle files
                 </p>
+                <div className="pt-4">
+                  <SubtitleSearch onSearch={handleSearch} isLoading={isLoading} />
+                </div>
             </div>
 
-            <SubtitleSearch onSearch={handleSearch} isLoading={isLoading} />
+            <div className="w-full md:w-auto opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
+                <AdBanner />
+            </div>
         </div>
       </section>
 
       {/* Results Section */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 py-16">
+        <div className="mb-12">
+            <AdBanner />
+        </div>
+        
         {isLoading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[...Array(8)].map((_, i) => (

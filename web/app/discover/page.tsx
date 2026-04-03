@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '@/lib/supabase'
 import DiscoverGrid from './DiscoverGrid'
+import AdBanner from '../components/AdBanner'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,16 +31,25 @@ export default async function DiscoverPage(props: { searchParams: SearchParams }
   return (
     <main className="min-h-screen bg-[#050505] text-white pt-8 pb-12 px-4 md:px-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-12">
-        <div className="space-y-3">
-          <h1 className="text-5xl md:text-7xl tracking-tighter" style={{ fontFamily: 'var(--font-bebas)' }}>
-            DISCOVER
-          </h1>
-          <p className="font-mono text-zinc-500 text-sm md:text-base">
-            RECENTLY SERVED VIA @SK_DLBOT
-          </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <div className="space-y-3">
+                <h1 className="text-5xl md:text-7xl tracking-tighter" style={{ fontFamily: 'var(--font-bebas)' }}>
+                    DISCOVER
+                </h1>
+                <p className="font-mono text-zinc-500 text-sm md:text-base">
+                    RECENTLY SERVED VIA @SK_DLBOT
+                </p>
+            </div>
+            <div className="w-full md:w-auto opacity-50 grayscale hover:grayscale-0 transition-all">
+                <AdBanner />
+            </div>
         </div>
 
         <DiscoverGrid initialData={data || []} />
+        
+        <div className="pt-12 border-t border-white/5">
+            <AdBanner />
+        </div>
       </div>
     </main>
   )
