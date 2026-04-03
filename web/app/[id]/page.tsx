@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase'
-import { getFreshCdnUrl } from '@/lib/moviebox'
+import { getMovieBoxDetails, searchMovieBox } from '@/lib/moviebox'
 import { Metadata } from 'next'
 import PlayerPageClient from './PlayerPageClient'
 
@@ -17,6 +17,7 @@ interface MediaRow {
   poster_url?: string
   description?: string
   imdb_id?: string
+  size?: number
 }
 
 export async function generateMetadata({
@@ -93,26 +94,6 @@ function ExpiredPage({ title }: { title: string }) {
   )
 }
 
-function mediaMetaLine(row: MediaRow): string {
-  const bits: string[] = []
-  bits.push(row.type === 'series' ? 'Series' : 'Movie')
-  if (row.type === 'series' && row.season && row.episode) {
-    bits.push(`S${row.season.toString().padStart(2, '0')}E${row.episode.toString().padStart(2, '0')}`)
-  }
-  if (row.quality) {
-    bits.push(row.quality)
-  }
-  return bits.join(' • ')
-}
-
-function getSafeFilename(row: MediaRow): string {
-  let name = row.title.replace(/[^a-zA-Z0-9.\- _]/g, '').trim()
-  if (row.type === 'series' && row.season && row.episode) {
-    name += ` - S${row.season.toString().padStart(2, '0')}E${row.episode.toString().padStart(2, '0')}`
-  }
-  return name + ' - SKDL(samkiel.online).mp4'
-}
-
 export const dynamic = 'force-dynamic'
 
 export default async function LinkPage({
@@ -155,22 +136,51 @@ export default async function LinkPage({
   }
 
   let finalUrl = row.cdn_url
+  let finalSize = row.size || 0
+  let finalPoster = row.poster_url
 
   // If we have a subject_id, get a fresh IP-bound link for the current requester
   if (row.subject_id) {
     try {
-      finalUrl = await getFreshCdnUrl(
+      const details = await getMovieBoxDetails(
         row.subject_id,
         row.type,
         row.season || 0,
         row.episode || 0
       )
+      
+      const downloads = details.downloads || []
+      if (downloads.length > 0) {
+        // Pick highest resolution available
+        const sorted = downloads.sort((a, b) => (b.resolution || 0) - (a.resolution || 0))
+        finalUrl = sorted[0].url
+        finalSize = sorted[0].size || 0
+      }
     } catch (e) {
       console.error('Failed to refresh CDN URL, falling back to original:', e)
     }
   }
 
-  const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}`
+  // If poster is missing, try searching moviebox as primary source
+  if (!finalPoster && row.title) {
+    try {
+      const searchRes = await searchMovieBox(row.title, row.type)
+      if (searchRes?.cover?.url) {
+        finalPoster = searchRes.cover.url
+      }
+    } catch (e) {
+        console.error('Failed to search poster for player page:', e)
+    }
+  }
 
-  return <PlayerPageClient row={row} proxyUrl={proxyUrl} />
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}`
+  
+  // Pass metadata to the client
+  const rowForClient = {
+      ...row,
+      poster_url: finalPoster,
+      size: finalSize
+  }
+
+  return <PlayerPageClient row={rowForClient as any} proxyUrl={proxyUrl} />
 }
