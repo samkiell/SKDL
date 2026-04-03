@@ -11,6 +11,13 @@
   --plyr-video-controls-background: linear-gradient(transparent, rgba(0,0,0,0.85));
 }
 
+/* Force dark icons when the button background is white (--plyr-color-main) */
+.plyr__control--overlaid,
+.plyr--video .plyr__controls .plyr__control:hover,
+.plyr--video .plyr__controls .plyr__control[aria-expanded="true"] {
+  color: #000000 !important;
+}
+
 body {
   color: #ffffff;
   background: #000000;
