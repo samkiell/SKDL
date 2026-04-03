@@ -265,13 +265,13 @@ async def handle_message(message: Message) -> None:
     match intent["intent"]:
         case "download_movie":
             if not await check_rate_limit(user_id):
-                await message.answer("⚠️ You've reached your daily limit of 10 requests. Please try again tomorrow.")
+                await message.answer("⚠️ whoa there big watcher, you've hit your daily limit of 10 movies. touch some grass and try again tomorrow!")
                 return
             await _handle_download_movie(message, intent, user_id)
 
         case "download_series":
             if not await check_rate_limit(user_id):
-                await message.answer("⚠️ You've reached your daily limit of 10 requests. Please try again tomorrow.")
+                await message.answer("⚠️ whoa there binge-watcher, you've hit your daily limit of 10 episodes. touch some grass and try again tomorrow!")
                 return
             await _handle_download_series(message, intent, user_id)
 
