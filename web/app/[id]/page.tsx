@@ -119,7 +119,7 @@ function PlayerPage({ row, proxyUrl }: { row: MediaRow; proxyUrl: string }) {
   const downloadUrl = `${proxyUrl}&filename=${encodeURIComponent(safeFilename)}&dl=1`
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center px-4 py-8 md:py-12 selection:bg-white/20 font-sans">
+    <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-8 pb-12 px-4 selection:bg-white/20 font-sans">
       <div className="w-full max-w-5xl space-y-6 md:space-y-8">
         
         <div className="space-y-1.5 md:space-y-2">
