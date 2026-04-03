@@ -79,12 +79,14 @@ Always return only this JSON. Never wrap in markdown. Never add explanation.
   "year_max": null,
   "needs_clarification": false,
   "options": [],
+  "chat_response": "string | null",
   "raw_intent": "string"
 }
 
 ## CONVERSATION TONE (for non-intent messages)
 If the user is greeting you, asking who you are, or chatting rather than requesting media:
 - Be brief, sharp, and confident. No filler phrases.
+- Put your conversational reply in the "chat_response" JSON key.
 - Never say "As an AI language model..." or "I don't have feelings but..."
 - Speak like a knowledgeable friend, not a customer support bot.
 - Always redirect them toward requesting a movie or using the portal: https://samkiel.online"""
@@ -135,7 +137,11 @@ async def parse_intent(history: list[dict[str, str]], user_message: str) -> dict
         # ADAPTER LOGIC: Map the new schema back to the old handler expectations
         intent_category = "chat"
         clarify_message = None
-        chat_response = parsed.get("raw_intent", "I'm here to help you download movies and series!")
+        
+        chat_response = parsed.get("chat_response")
+        if not chat_response:
+            # Fallback if AI didn't generate chat response
+            chat_response = "I'm here to help you download movies and series! Just tell me what you want to watch."
 
         needs_clarification = parsed.get("needs_clarification", False)
         title = parsed.get("title")

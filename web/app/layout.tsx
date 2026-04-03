@@ -19,7 +19,7 @@ const jbMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'SKDL — Cinema Hub',
+  title: 'SKDL — Netflix and Chill with SKDL',
   description: 'Instant AI-Powered TV & Movie Downloads.',
 }
 
