@@ -38,6 +38,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null)
   const [isMuxing, setIsMuxing] = useState(false)
   const [statusIndex, setStatusIndex] = useState(0)
+  const [timeLeft, setTimeLeft] = useState(10)
 
   const statuses = [
     "Preparing MKV...",
@@ -49,11 +50,18 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
   ]
 
   useEffect(() => {
+    if (timeLeft > 0) {
+        const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
+        return () => clearTimeout(timer)
+    }
+  }, [timeLeft])
+
+  useEffect(() => {
     let interval: NodeJS.Timeout
     if (isMuxing) {
         interval = setInterval(() => {
             setStatusIndex((prev) => Math.min(prev + 1, statuses.length - 1))
-        }, 2000) // Slightly slower for a more deliberate feel
+        }, 2000)
     } else {
         setStatusIndex(0)
     }
@@ -129,20 +137,24 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
                 {/* Download MP4 */}
                 <a
-                    href={downloadMp4Url}
-                    className="flex-1 flex justify-center items-center bg-zinc-900 border border-white/10 text-white text-xs md:text-sm font-bold px-6 py-4 rounded-md hover:bg-zinc-800 transition-colors uppercase tracking-wider"
+                    href={timeLeft === 0 ? downloadMp4Url : "#"}
+                    onClick={(e) => { if (timeLeft > 0) e.preventDefault(); }}
+                    className={`flex-1 flex justify-center items-center bg-zinc-900 border border-white/10 text-white text-xs md:text-sm font-bold px-6 py-4 rounded-md transition-all uppercase tracking-wider ${timeLeft > 0 ? 'opacity-50 cursor-not-allowed hover:bg-zinc-900' : 'hover:bg-zinc-800'}`}
                 >
-                    Download MP4
+                    {timeLeft > 0 ? `Download MP4 (${timeLeft}s)` : 'Download MP4'}
                 </a>
 
                 {/* Download MKV + Subs */}
                 <button
                     onClick={handleDownloadMkv}
-                    disabled={!subtitleUrl || isMuxing}
+                    disabled={!subtitleUrl || isMuxing || timeLeft > 0}
                     title={!subtitleUrl ? "No subtitles found for this title" : ""}
                     className="flex-1 flex justify-center items-center bg-white text-black text-xs md:text-sm font-bold px-6 py-4 rounded-md hover:bg-zinc-200 transition-colors uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isMuxing ? statuses[statusIndex] : "Download MKV + Subs"}
+                    {isMuxing 
+                        ? statuses[statusIndex] 
+                        : (timeLeft > 0 ? `Download MKV (${timeLeft}s)` : "Download MKV + Subs")
+                    }
                 </button>
             </div>
 
