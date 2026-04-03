@@ -109,7 +109,7 @@ function getSafeFilename(row: MediaRow): string {
   if (row.type === 'series' && row.season && row.episode) {
     name += ` - S${row.season.toString().padStart(2, '0')}E${row.episode.toString().padStart(2, '0')}`
   }
-  return name + '.mp4'
+  return name + ' - SKDL(samkiel.online).mp4'
 }
 
 function PlayerPage({ row, proxyUrl }: { row: MediaRow; proxyUrl: string }) {
