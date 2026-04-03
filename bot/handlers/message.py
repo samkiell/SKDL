@@ -101,7 +101,7 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int) -
             cdn_url=result["cdn_url"],
             media_type="movie",
             quality=result["quality"],
-            requested_by=message.from_user.id,
+            requested_by=user_id,
             subject_id=result["subject_id"],
         )
 
@@ -126,7 +126,7 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int) -
             logger.warning("Direct file delivery failed for '%s': %s", result['title'], e)
             # We don't notify the user because the link is the primary delivery method
 
-        clear_session(message.from_user.id)
+        clear_session(user_id)
 
     except Exception as exc:
         logger.error("Movie download failed: %s", exc)
@@ -146,12 +146,19 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int) 
         await message.answer("🤔 I couldn't figure out the series title. Could you be more specific?")
         return
 
+    if intent.get("bulk") and season is not None:
+        await _handle_bulk_series(message, intent, user_id)
+        return
+
     if season is None or episode is None:
         await message.answer(
             f"📺 I found **{title}**, but I need the season and episode number.\n"
             f"Example: \"{title} season 2 episode 5\"",
             parse_mode="Markdown",
         )
+        return
+
+    if await _present_quality_options(message, intent, user_id):
         return
 
     quality = intent.get("quality") or "1080p"
@@ -173,7 +180,7 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int) 
             quality=result["quality"],
             season=result["season"],
             episode=result["episode"],
-            requested_by=message.from_user.id,
+            requested_by=user_id,
             subject_id=result["subject_id"],
         )
 
@@ -197,7 +204,7 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int) 
         except Exception as e:
             logger.warning("Direct file delivery failed for series '%s': %s", result['title'], e)
 
-        clear_session(message.from_user.id)
+        clear_session(user_id)
 
     except Exception as exc:
         logger.error("Series download failed: %s", exc)

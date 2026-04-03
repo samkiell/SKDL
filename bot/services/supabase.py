@@ -70,3 +70,41 @@ async def get_media(link_id: str) -> dict | None:
     except Exception as exc:
         logger.error("Supabase lookup failed for id=%s: %s", link_id, exc)
         return None
+
+async def save_collection(
+    collection_id: str,
+    title: str,
+    season: int,
+    media_ids: list[str],
+    requested_by: int | None = None,
+) -> dict | None:
+    """Insert a bulk season collection into the collections table."""
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.CDN_TTL_HOURS)
+    row = {
+        "id": collection_id,
+        "title": title,
+        "season": season,
+        "media_ids": media_ids,
+        "requested_by": requested_by,
+        "expires_at": expires_at.isoformat(),
+    }
+    try:
+        result = _client.table("collections").insert(row).execute()
+        if result.data:
+            return result.data[0]
+        return None
+    except Exception as exc:
+        logger.error("Supabase insert failed for collection_id=%s: %s", collection_id, exc)
+        return None
+
+async def get_collection(collection_id: str) -> dict | None:
+    """Look up a collection by ID."""
+    try:
+        result = _client.table("collections").select("*").eq("id", collection_id).execute()
+        if result.data and len(result.data) > 0:
+            return result.data[0]
+        return None
+    except Exception as exc:
+        logger.error("Supabase lookup failed for collection_id=%s: %s", collection_id, exc)
+        return None
+
