@@ -10,21 +10,21 @@ from services.session import clear_session
 
 router = Router()
 
-WELCOME_MESSAGE = """🎬 **SKDL — Netflix and Chill with SKDL** 🍿
+WELCOME_MESSAGE = """🤖 **AI-POWERED CINEMATIC DISCOVERY // SKDL** 🍿
 
-I can help you download movies and TV series. Just tell me what you want to watch!
+I'm your assistant for high-speed movie and series downloads. Just tell me what you want in plain English, or **drop an image** (screenshot/poster) and I'll find it for you!
 
-**Examples:**
+**Direct Examples:**
 • "I want to watch Avatar"
-• "Download Breaking Bad season 2 episode 3"
-• "Get me Inception in 720p"
+• "Download season 1 of Stranger Things"
+• "Get me Inception in 1080p"
 
-**Commands:**
-/movie `<title>` — Direct movie download
-/series `<title>` `<season>` `<episode>` — Direct series download
-/status — Check bot status
+**Shortcuts:**
+🎬 `/movie [title]` — Direct movie fetch
+📺 `/series [title] [season] [episode]` — Direct episode fetch
+📊 `/status` — Check bot health
 
-Or just send a message — I understand natural language! 🎬"""
+Or just send me a message — I'm built by **SAMKIEL** and I'm ready to find your next watch! 🎬"""
 
 STATUS_MESSAGE = """✅ **Bot Status: Online**
 
