@@ -11,7 +11,7 @@ export async function GET() {
     if (error) throw error
 
     // Map to simple key-value object
-    const settings = data.reduce((acc: any, curr) => {
+    const settings = (data || []).reduce((acc: Record<string, any>, curr: any) => {
       acc[curr.key] = curr.value
       return acc
     }, {})

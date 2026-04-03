@@ -136,6 +136,20 @@ Always return exactly this JSON object. Never wrap it in markdown. Do not add an
   "raw_intent": "string"
 }"""
 
+FALLBACK_INTENT: dict = {
+    "intent": "chat",
+    "title": None,
+    "year": None,
+    "season": None,
+    "episode": None,
+    "quality": "1080p",
+    "clarify_message": None,
+    "chat_response": "I didn't quite understand that. Could you try rephrasing? You can ask me to download a movie or TV series episode.",
+    "bulk": False,
+    "source_hint": None,
+    "mood": None,
+}
+
 async def parse_intent(history: list[dict[str, str]], user_message: str, image_base64: str | None = None) -> dict:
     """
     Send conversation history + latest user message to Groq.
@@ -143,11 +157,9 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
     """
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-    # Add conversation history for context
     for msg in history:
         messages.append({"role": msg["role"], "content": msg["content"]})
 
-    # Add the current user message securely with or without image
     if image_base64:
         messages.append({
             "role": "user",
@@ -177,18 +189,15 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
 
         raw = response.choices[0].message.content
         if not raw:
-            logger.warning("Groq returned empty content")
             return FALLBACK_INTENT.copy()
 
         parsed = json.loads(raw)
 
-        # ADAPTER LOGIC: Map the new schema back to the old handler expectations
         intent_category = "chat"
         clarify_message = None
         
         chat_response = parsed.get("chat_response")
         if not chat_response:
-            # Fallback if AI didn't generate chat response
             chat_response = "I'm here to help you download movies and series! Just tell me what you want to watch."
 
         needs_clarification = parsed.get("needs_clarification", False)
@@ -198,46 +207,47 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
         if needs_clarification and parsed.get("options"):
             intent_category = "clarify"
             options = parsed.get("options", [])
-            opts_str = ", ".join(options)
-            clarify_message = f"Did you mean one of these: {opts_str}?"
+            # Format detailed options: "Title (Year) - Description"
+            opts_list = []
+            for opt in options:
+                t = opt.get("title", "Unknown")
+                y = opt.get("year", "")
+                d = opt.get("description", "")
+                opts_list.append(f"{t} ({y}) - {d}" if y else f"{t} - {d}")
+            
+            opts_str = "\n• ".join(opts_list)
+            clarify_message = f"Did you mean one of these?\n\n• {opts_str}"
         elif title:
             intent_category = "download_series" if is_series else "download_movie"
 
-        # Special casing for "help" or casual queries via raw_intent
         if not title and not needs_clarification and "help" in (parsed.get("raw_intent") or "").lower():
             intent_category = "help"
 
-        # Ensure all expected keys exist with defaults
         return {
             "intent": intent_category,
             "title": title,
             "year": parsed.get("year_min") or parsed.get("year_max"),
             "season": parsed.get("season"),
             "episode": parsed.get("episode"),
-            "quality": parsed.get("quality"),
+            "quality": parsed.get("quality") or "1080p",
             "clarify_message": clarify_message,
             "chat_response": chat_response,
             "bulk": parsed.get("bulk", False),
             "genre": parsed.get("genre"),
             "mood": parsed.get("mood"),
+            "source_hint": parsed.get("source_hint"),
             "reference_title": parsed.get("reference_title")
         }
 
-    except json.JSONDecodeError as exc:
-        logger.error("Groq returned invalid JSON for %s: %s", model_name, exc)
-        logger.error("RAW Content: %s", raw if 'raw' in locals() else "Unknown")
-        return FALLBACK_INTENT.copy()
     except Exception as exc:
-        logger.error("Groq API call failed: %s", exc)
-        # Check for rate limit specifically
+        logger.error("Groq processing failed: %s", exc)
         if "429" in str(exc) or "rate_limit" in str(exc).lower():
             rate_limit_fallback = FALLBACK_INTENT.copy()
             rate_limit_fallback["chat_response"] = (
                 "phew, I'm a bit overwhelmed right now! my AI brain is taking a quick nap. "
                 "you can still request movies manually though! just type:\n\n"
-                "🎬 `/movie [title]` — for movies\n"
-                "📺 `/series [title] [season] [episode]` — for series"
+                "🎬 `/movie [title]`\n"
+                "📺 `/series [title] [season] [episode]`"
             )
             return rate_limit_fallback
-            
         return FALLBACK_INTENT.copy()
