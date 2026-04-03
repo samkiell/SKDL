@@ -75,8 +75,8 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     videoUrl: data.url,
-                    subtitleUrl: subData.subtitleUrl || null,
-                    title: displayFilename,
+                    subtitleUrl: subData.subtitleUrl || 'not_found',
+                    filename: displayFilename,
                     imdbId: data.imdb_id
                 })
             })
@@ -123,7 +123,7 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
             <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.3em] font-bold">
               SKDL_RATE_LIMIT_SYSTEM
             </span>
-            <h1 className="text-3xl md:text-5xl font-space font-bold tracking-tighter italic text-white uppercase italic">
+            <h1 className="text-3xl md:text-5xl font-space font-bold tracking-tighter text-white uppercase">
               {type === 'mkv' ? 'MKV + SUBS Ready' : 'Download MP4'}
             </h1>
           </div>

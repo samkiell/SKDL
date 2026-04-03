@@ -52,12 +52,15 @@ export async function POST(request: NextRequest) {
         })
     }
 
-    console.info('[api/mux] downloading subtitles...', { subs: subtitleUrl })
+    const hasSubs = subtitleUrl && subtitleUrl !== 'not_found'
+    if (hasSubs) {
+        console.info('[api/mux] downloading subtitles...', { subs: subtitleUrl })
+        await downloadFile(subtitleUrl, subtitleFile)
+    } else {
+        console.info('[api/mux] no subtitles found, skipping sub muxing.')
+    }
     
-    // Download SRT (always small)
-    await downloadFile(subtitleUrl, subtitleFile)
-    
-    console.info('[api/mux] starting streaming mux with ffmpeg...', { video: videoUrl, subs: subtitleFile })
+    console.info('[api/mux] starting streaming mux with ffmpeg...', { video: videoUrl, subs: hasSubs ? subtitleFile : 'none' })
 
     // Build headers string for FFmpeg
     const ffHeaders = [
@@ -68,20 +71,38 @@ export async function POST(request: NextRequest) {
 
     // Run FFmpeg command - Instant start via streaming input
     return new Promise<Response>((resolve) => {
-        const ffmpeg = spawn(ffmpegPath, [
+        const ffmpegArgs = [
             '-headers', ffHeaders,
             '-i', videoUrl,
-            '-i', subtitleFile,
+        ]
+
+        if (hasSubs) {
+            ffmpegArgs.push('-i', subtitleFile)
+        }
+
+        ffmpegArgs.push(
             '-map', '0:v',    // Map first input video
             '-map', '0:a',    // Map first input audio
-            '-map', '1:s',    // Map second input (SRT) subtitle
-            '-c', 'copy',     // Stream copy both video and audio
-            '-c:s', 'srt',     // Subtitle codec
-            '-metadata:s:s:0', 'language=eng',
+        )
+
+        if (hasSubs) {
+            ffmpegArgs.push(
+                '-map', '1:s',    // Map second input (SRT) subtitle
+                '-c', 'copy',     // Stream copy both video and audio
+                '-c:s', 'srt',     // Subtitle codec
+                '-metadata:s:s:0', 'language=eng'
+            )
+        } else {
+            ffmpegArgs.push('-c', 'copy')
+        }
+
+        ffmpegArgs.push(
             '-y',             // Overwrite output
             '-f', 'matroska', // Output format
             outputFile
-        ])
+        )
+
+        const ffmpeg = spawn(ffmpegPath, ffmpegArgs)
 
         ffmpeg.stderr.on('data', (data) => {
             // Log one line only for progress to avoid cluttering but show activity
