@@ -80,7 +80,9 @@ function ExpiredPage({ title }: { title: string }) {
         <h1 className="text-xl font-medium mb-2">{title}</h1>
         <p className="text-sm text-zinc-400 mb-8 font-mono">LINK_EXPIRED_OR_INVALID</p>
         <a
-          href="https://t.me/SK_DLBOT"
+          href={`https://t.me/SK_DLBOT?text=${encodeURIComponent(`hey i would like to download ${title}`)}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="block w-full bg-white text-black text-sm font-bold px-6 py-3.5 rounded-md hover:bg-zinc-200 transition-colors uppercase tracking-wider"
         >
           Request Again on Telegram
