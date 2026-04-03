@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 interface MediaCard {
   id: string
@@ -13,7 +14,26 @@ interface MediaCard {
 }
 
 export default function DiscoverGrid({ initialData }: { initialData: MediaCard[] }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [filter, setFilter] = useState<'ALL' | 'MOVIES' | 'SERIES'>('ALL')
+  const [query, setQuery] = useState(searchParams.get('q') || '')
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setQuery(val)
+    
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    
+    timeoutRef.current = setTimeout(() => {
+      if (val) {
+        router.replace(`/discover?q=${encodeURIComponent(val)}`)
+      } else {
+        router.replace('/discover')
+      }
+    }, 500)
+  }
 
   const filtered = initialData.filter(item => {
     if (filter === 'MOVIES') return item.type === 'movie'
@@ -23,9 +43,10 @@ export default function DiscoverGrid({ initialData }: { initialData: MediaCard[]
 
   return (
     <div className="space-y-8">
-      {/* Filter Tabs */}
-      <div className="flex gap-4 border-b border-white/10 pb-4 font-mono text-sm">
-        {(['ALL', 'MOVIES', 'SERIES'] as const).map(tab => (
+      {/* Controls: Search & Filters */}
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex gap-4 font-mono text-sm">
+          {(['ALL', 'MOVIES', 'SERIES'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setFilter(tab)}
@@ -34,6 +55,17 @@ export default function DiscoverGrid({ initialData }: { initialData: MediaCard[]
             {tab}
           </button>
         ))}
+        </div>
+        
+        <div className="w-full md:w-64">
+          <input
+            type="text"
+            placeholder="Search media..."
+            value={query}
+            onChange={handleSearchChange}
+            className="w-full bg-[#0a0a0a] border border-white/10 rounded-md px-4 py-2 text-sm font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-[#e8ff47]/50 focus:ring-1 focus:ring-[#e8ff47]/50 transition-colors"
+          />
+        </div>
       </div>
 
       {/* Grid */}

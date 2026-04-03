@@ -3,22 +3,32 @@ import DiscoverGrid from './DiscoverGrid'
 
 export const dynamic = 'force-dynamic'
 
-export default async function DiscoverPage() {
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
+
+export default async function DiscoverPage(props: { searchParams: SearchParams }) {
+  const searchParams = await props.searchParams
+  const q = typeof searchParams.q === 'string' ? searchParams.q : ''
+
   const supabase = getSupabaseClient()
   
-  // Need to make sure the database table has created_at
-  const { data, error } = await supabase
+  let query = supabase
     .from('media')
-    .select('id, title, type, quality, created_at')
+    .select('id, title, type, quality, poster_url, created_at')
     .order('created_at', { ascending: false })
     .limit(24)
+
+  if (q) {
+    query = query.ilike('title', `%${q}%`)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     console.error('Failed to fetch discover list:', error)
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white pt-24 pb-12 px-4 md:px-8 font-sans">
+    <main className="min-h-screen bg-[#050505] text-white pt-8 pb-12 px-4 md:px-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-12">
         <div className="space-y-3">
           <h1 className="text-5xl md:text-7xl tracking-tighter" style={{ fontFamily: 'var(--font-bebas)' }}>
