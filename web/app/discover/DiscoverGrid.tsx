@@ -70,8 +70,24 @@ export default function DiscoverGrid({ initialData }: { initialData: MediaCard[]
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="text-zinc-500 font-mono py-12">
-          Nothing here yet — request something via @SK_DLBOT.
+        <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-xl md:text-2xl font-medium text-zinc-400 capitalize">
+              {query ? `Can't find "${query}"` : "Nothing here yet"}
+            </h3>
+            <p className="text-sm text-zinc-500 font-mono tracking-tight max-w-xs mx-auto">
+              Our library is growing, but SKDL can find anything you need in seconds.
+            </p>
+          </div>
+          
+          <a
+            href={`https://t.me/SK_DLBOT?text=${encodeURIComponent(query ? `Hey, I would like to download ${query}` : "Hey, I'm looking for a movie...")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center bg-white text-black px-8 py-3 rounded-full text-sm font-bold uppercase tracking-widest hover:bg-[#e8ff47] transition-all hover:scale-105 active:scale-95"
+          >
+            Ask SKDL
+          </a>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
