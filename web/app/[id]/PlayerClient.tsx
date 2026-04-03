@@ -191,7 +191,7 @@ export default function PlayerClient({ proxyUrl, imdbId, query, onSubtitleFound 
                 </button>
                 
                 <div className="text-[11px] md:text-sm font-mono font-bold tracking-tight">
-                    <span className="text-[#e8ff47]">{formatTime(currentTime)}</span>
+                    <span className="text-zinc-400">{formatTime(currentTime)}</span>
                     <span className="text-white/40 mx-1">/</span>
                     <span className="text-white/80">{formatTime(duration)}</span>
                 </div>
@@ -202,7 +202,7 @@ export default function PlayerClient({ proxyUrl, imdbId, query, onSubtitleFound 
                 {subtitleUrl && (
                     <button 
                         onClick={toggleCaptions}
-                        className={`text-xs font-bold px-2 py-1 rounded transition-colors ${isCaptionsOn ? 'bg-[#e8ff47] text-black' : 'bg-white/10 text-white/50 hover:bg-white/20'}`}
+                        className={`text-xs font-bold px-2 py-1 rounded transition-colors ${isCaptionsOn ? 'bg-zinc-400 text-black' : 'bg-white/10 text-white/50 hover:bg-white/20'}`}
                     >
                         CC
                     </button>
