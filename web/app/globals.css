@@ -34,26 +34,34 @@ body {
 
 /* Custom Plyr Overrides */
 .plyr__time--current {
-  font-size: 1rem !important; /* Slightly larger */
-  font-weight: 600 !important;
-  color: #e8ff47 !important; /* SKDL signature color */
-  padding-left: 8px !important;
+  font-size: 1.1rem !important; /* Larger font */
+  font-weight: 700 !important;
+  color: #e8ff47 !important; 
+  padding: 0 12px !important;
+  min-width: 80px !important; /* Larger width */
+  text-align: center;
 }
 
-/* Hide volume slider until focused/clicked */
+/* Compact volume style - only expands on hover */
+.plyr__volume {
+  min-width: 36px;
+  display: flex !important;
+  align-items: center;
+}
+
 .plyr__volume input[type="range"] {
-  max-width: 0;
-  opacity: 0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-left: 0;
+  max-width: 0 !important;
+  opacity: 0 !important;
+  transition: all 0.25s ease-out !important;
+  margin-left: 0 !important;
   pointer-events: none;
 }
 
-.plyr__volume:focus-within input[type="range"],
-.plyr__volume:hover input[type="range"] {
-  max-width: 80px;
-  opacity: 1;
-  margin-left: 8px;
+.plyr__volume:hover input[type="range"],
+.plyr__volume:focus-within input[type="range"] {
+  max-width: 60px !important;
+  opacity: 1 !important;
+  margin-left: 10px !important;
   pointer-events: auto;
 }
 

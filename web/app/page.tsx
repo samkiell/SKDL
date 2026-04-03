@@ -109,7 +109,7 @@ export default function LandingPage() {
             No ads. No interruptions. Pure entertainment.
           </p>
           <a href="https://t.me/SK_DLBOT" target="_blank" rel="noopener noreferrer" className={`${styles.btn} ${styles.btnAccent}`}>
-            START SKDL
+            Watch Latest Now!
           </a>
         </div>
       </section>
