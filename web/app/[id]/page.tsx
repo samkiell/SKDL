@@ -1,8 +1,11 @@
 import { notFound } from 'next/navigation'
+import nextDynamic from 'next/dynamic'
 import { getSupabaseClient } from '@/lib/supabase'
 import { getFreshCdnUrl } from '@/lib/moviebox'
 import { Metadata } from 'next'
-import PlayerPageClient from './PlayerPageClient'
+
+// Dynamically import the player component to fix "document is not defined" during SSR
+const PlayerPageClient = nextDynamic(() => import('./PlayerPageClient'), { ssr: false })
 
 interface MediaRow {
   id: string

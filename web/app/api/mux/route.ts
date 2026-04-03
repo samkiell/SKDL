@@ -24,13 +24,20 @@ export async function POST(request: NextRequest) {
     const subtitleFile = path.join(tmpDir, `subs_${Date.now()}.srt`)
     const outputFile = path.join(tmpDir, `${filename}.mkv`)
 
-    // Helper to download a file
+    // Helper to download a file with spoofed headers to avoid 403s
     const downloadFile = (url: string, dest: string) => {
         return new Promise((resolve, reject) => {
             const file = fs.createWriteStream(dest)
-            https.get(url, (response) => {
+            const headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                'Referer': 'https://fmoviesunblocked.net/',
+                'Origin': 'https://h5.aoneroom.com',
+                'Accept': '*/*',
+            }
+
+            https.get(url, { headers }, (response) => {
                 if (response.statusCode !== 200) {
-                    reject(new Error(`Failed to download ${url}: ${response.statusMessage}`))
+                    reject(new Error(`Failed to download ${url}: ${response.statusCode} ${response.statusMessage}`))
                     return
                 }
                 response.pipe(file)
