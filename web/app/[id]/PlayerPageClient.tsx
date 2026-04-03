@@ -95,6 +95,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
         <PlayerClient 
           proxyUrl={proxyUrl} 
           imdbId={row.imdb_id} 
+          query={row.title}
           onSubtitleFound={(url) => setSubtitleUrl(url)} 
         />
 

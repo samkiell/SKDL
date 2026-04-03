@@ -15,8 +15,18 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 1. Search for subtitles
-    const searchUrl = `https://api.opensubtitles.com/api/v1/subtitles?imdb_id=${imdbId.replace('tt', '')}&languages=${lang}`
+    // 1. Search for subtitles by IMDB ID if available
+    let searchUrl = ''
+    if (imdbId && imdbId !== 'null' && imdbId !== 'undefined' && imdbId.trim() !== '') {
+        searchUrl = `https://api.opensubtitles.com/api/v1/subtitles?imdb_id=${imdbId.replace('tt', '')}&languages=${lang}`
+    } else if (request.nextUrl.searchParams.get('query')) {
+        // Fallback to title search
+        const query = request.nextUrl.searchParams.get('query')
+        searchUrl = `https://api.opensubtitles.com/api/v1/subtitles?query=${encodeURIComponent(query!)}&languages=${lang}`
+    } else {
+        return NextResponse.json({ found: false, error: 'No search criteria provided' })
+    }
+
     const searchRes = await fetch(searchUrl, {
       headers: {
         'Api-Key': apiKey,
@@ -31,7 +41,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ found: false, error: 'OpenSubtitles search failed' })
     }
 
-    const searchData = await searchRes.json()
+    let searchData = await searchRes.json()
+    
+    // If ID search failed to find anything, try query search if available
+    if ((!searchData.data || searchData.data.length === 0) && imdbId && request.nextUrl.searchParams.get('query')) {
+        console.log(`[api/subtitles] ID search for ${imdbId} empty, falling back to title search...`)
+        const fallbackUrl = `https://api.opensubtitles.com/api/v1/subtitles?query=${encodeURIComponent(request.nextUrl.searchParams.get('query')!)}&languages=${lang}`
+        const fallbackRes = await fetch(fallbackUrl, {
+            headers: {
+                'Api-Key': apiKey,
+                'User-Agent': 'SKDL v1.0',
+                'Accept': 'application/json',
+            },
+        })
+        if (fallbackRes.ok) {
+            searchData = await fallbackRes.json()
+        }
+    }
+
     if (!searchData.data || searchData.data.length === 0) {
       return NextResponse.json({ found: false })
     }

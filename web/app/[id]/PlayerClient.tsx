@@ -8,19 +8,22 @@ import '../globals.css'
 interface PlayerClientProps {
   proxyUrl: string
   imdbId?: string
+  query?: string
   onSubtitleFound?: (url: string) => void
 }
 
-export default function PlayerClient({ proxyUrl, imdbId, onSubtitleFound }: PlayerClientProps) {
+export default function PlayerClient({ proxyUrl, imdbId, query, onSubtitleFound }: PlayerClientProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!imdbId) return
-
     const fetchSubtitles = async () => {
       try {
-        const res = await fetch(`/api/subtitles?imdb_id=${imdbId}`)
+        const url = new URL('/api/subtitles', window.location.origin)
+        if (imdbId) url.searchParams.set('imdb_id', imdbId)
+        if (query) url.searchParams.set('query', query)
+        
+        const res = await fetch(url.toString())
         const data = await res.json()
         if (data.found && data.subtitleUrl) {
           setSubtitleUrl(data.subtitleUrl)
@@ -32,7 +35,7 @@ export default function PlayerClient({ proxyUrl, imdbId, onSubtitleFound }: Play
     }
 
     fetchSubtitles()
-  }, [imdbId, onSubtitleFound])
+  }, [imdbId, query, onSubtitleFound])
 
   useEffect(() => {
     if (!videoRef.current) return
