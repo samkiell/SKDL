@@ -102,11 +102,11 @@ export default function LandingPage() {
         <div className={styles.heroGlow}></div>
         <div className={`${styles.heroContent} ${styles.reveal}`}>
           <span className={styles.heroLabel}>AI-POWERED CINEMATIC DISCOVERY // SKDL</span>
-          <h1 className={styles.heroTitle}>AI-POWERED<br />ENTERTAINMENT</h1>
+          <h1 className={styles.heroTitle}>Netflix and Chill<br />With SKDL</h1>
     
           <p className={styles.heroDesc}>
-            Experience lightning-fast movie and series discovery. 
-            Instant. High Quality. Pure entertainment.
+            Experience lightning-fast movie and series downloads directly from Telegram. 
+            AI-Powered. Instant. Pure entertainment.
           </p>
           <a href="https://t.me/SK_DLBOT" target="_blank" rel="noopener noreferrer" className={`${styles.btn} ${styles.btnAccent}`}>
             Watch Latest Now!
