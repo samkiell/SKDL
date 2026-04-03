@@ -13,7 +13,7 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
   const poster = searchParams.get('poster') || ''
   const type = searchParams.get('type') || 'mp4'
 
-  const adsOn = process.env.NEXT_PUBLIC_ADS_ON === 'ON'
+  const adsOn = process.env.NEXT_PUBLIC_ADS === 'ON'
   const [counter, setCounter] = useState(adsOn ? 10 : 0)
   const [loading, setLoading] = useState(false)
   const [isMuxing, setIsMuxing] = useState(false)

@@ -17,7 +17,7 @@ interface DownloadModalProps {
 }
 
 export default function DownloadModal({ result, onClose, onDownload }: DownloadModalProps) {
-  const adsOn = process.env.NEXT_PUBLIC_ADS_ON === 'ON'
+  const adsOn = process.env.NEXT_PUBLIC_ADS === 'ON'
   const [countdown, setCountdown] = useState(adsOn ? 10 : 0);
   const [isReady, setIsReady] = useState(!adsOn);
 

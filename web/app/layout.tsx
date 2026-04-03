@@ -67,7 +67,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
-        {process.env.NEXT_PUBLIC_ADS_ON === 'ON' && process.env.NEXT_PUBLIC_ADSTERRA_SOCIAL_BAR_SRC && (
+        {process.env.NEXT_PUBLIC_ADS === 'ON' && process.env.NEXT_PUBLIC_ADSTERRA_SOCIAL_BAR_SRC && (
           <Script
             src={process.env.NEXT_PUBLIC_ADSTERRA_SOCIAL_BAR_SRC}
             strategy="afterInteractive"

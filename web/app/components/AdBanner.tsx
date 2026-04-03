@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react'
 export default function AdBanner() {
   const adRef = useRef<HTMLDivElement>(null)
   const adTag = process.env.NEXT_PUBLIC_ADSTERRA_BANNER_TAG
-  const adsOn = process.env.NEXT_PUBLIC_ADS_ON === 'ON'
+  const adsOn = process.env.NEXT_PUBLIC_ADS === 'ON'
 
   useEffect(() => {
     if (!adRef.current || !adTag || !adsOn) return
