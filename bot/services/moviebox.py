@@ -131,6 +131,40 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
         raise RuntimeError(f"Could not fetch movie '{title}': {exc}") from exc
 
 
+async def get_available_qualities(title: str, is_series: bool, season: int | None = None, episode: int | None = None) -> dict:
+    session = Session()
+    try:
+        if is_series:
+            search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=1)
+            results = await search.get_content_model()
+            if not results.items: return {}
+            target = results.first_item
+            detail = DownloadableTVSeriesFilesDetail(session, target)
+            downloadable = await detail.get_content_model(season=season, episode=episode)
+        else:
+            search = Search(session, query=title, subject_type=SubjectType.MOVIES, per_page=1)
+            results = await search.get_content_model()
+            if not results.items: return {}
+            target = results.first_item
+            detail = DownloadableMovieFilesDetail(session, target)
+            downloadable = await detail.get_content_model()
+            
+        downloads = getattr(downloadable, "downloads", []) or []
+        qualities = []
+        for d in downloads:
+            res = int(getattr(d, "resolution", 0) or 0)
+            size = int(getattr(d, "size", 0) or 0)
+            if res > 0:
+                qualities.append({"resolution": res, "size": size, "label": f"{res}p"})
+        
+        # Sort best to worst
+        qualities.sort(key=lambda x: x["resolution"], reverse=True)
+        return {"title": target.title, "qualities": qualities}
+    except Exception as exc:
+        logger.error("Failed to fetch available qualities: %s", exc)
+        return {}
+
+
 async def get_episode(
     title: str, season: int, episode: int, quality: str = "1080p"
 ) -> dict:

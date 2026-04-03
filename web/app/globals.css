@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --plyr-color-main: #e8ff47;
+  --plyr-video-background: #080808;
+  --plyr-control-spacing: 12px;
+  --plyr-font-family: 'DM Mono', monospace;
+  --plyr-range-fill-background: #e8ff47;
+  --plyr-video-controls-background: linear-gradient(transparent, rgba(0,0,0,0.85));
+}
+
 body {
   color: #ededed;
   background: #0f0f0f;

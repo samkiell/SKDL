@@ -8,12 +8,16 @@ from __future__ import annotations
 
 import logging
 
-from aiogram import Router
-from aiogram.types import Message
+from aiogram import Router, F
+from aiogram.types import Message, CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from services.groq_service import parse_intent
-from services.session import add_message, get_history, clear_session
-from services.moviebox import get_movie, get_episode
+from services.session import (
+    add_message, get_history, clear_session,
+    set_pending_request, get_pending_request, clear_pending_request
+)
+from services.moviebox import get_movie, get_episode, get_available_qualities
 from services.link import generate_id, build_url
 from services.supabase import save_media
 
@@ -37,11 +41,49 @@ Just tell me what you want to watch in plain English!
 I'll find it, generate a download link, and send it to you! 🍿"""
 
 
-async def _handle_download_movie(message: Message, intent: dict) -> None:
+async def _present_quality_options(message: Message, intent: dict, user_id: int) -> bool:
+    """Returns True if presented, False if skipped (no options/already chose)."""
+    if intent.get("_quality_selected"):
+        return False
+
+    title = intent.get("title")
+    is_series = intent.get("intent") == "download_series"
+    season = intent.get("season")
+    episode = intent.get("episode")
+
+    status_msg = await message.answer(f"🔍 Locating **{title}**...", parse_mode="Markdown")
+
+    data = await get_available_qualities(title, is_series, season, episode)
+    qualities = data.get("qualities", [])
+
+    if not qualities:
+        await status_msg.delete()
+        return False
+
+    set_pending_request(user_id, intent)
+
+    builder = InlineKeyboardBuilder()
+    for q in qualities[:5]:
+        mb_size = q['size'] // 1024 // 1024
+        builder.button(text=f"🎬 {q['label']} ({mb_size}MB)", callback_data=f"q:{q['label']}")
+
+    builder.adjust(1)
+    await status_msg.edit_text(
+        f"✅ Found **{data.get('title', title)}**.\nChoose your quality 👇",
+        reply_markup=builder.as_markup(),
+        parse_mode="Markdown"
+    )
+    return True
+
+
+async def _handle_download_movie(message: Message, intent: dict, user_id: int) -> None:
     """Process a download_movie intent."""
     title = intent.get("title")
     if not title:
         await message.answer("🤔 I couldn't figure out the movie title. Could you be more specific?")
+        return
+
+    if await _present_quality_options(message, intent, user_id):
         return
 
     quality = intent.get("quality") or "1080p"
@@ -94,7 +136,7 @@ async def _handle_download_movie(message: Message, intent: dict) -> None:
         )
 
 
-async def _handle_download_series(message: Message, intent: dict) -> None:
+async def _handle_download_series(message: Message, intent: dict, user_id: int) -> None:
     """Process a download_series intent."""
     title = intent.get("title")
     season = intent.get("season")
@@ -183,10 +225,10 @@ async def handle_message(message: Message) -> None:
 
     match intent["intent"]:
         case "download_movie":
-            await _handle_download_movie(message, intent)
+            await _handle_download_movie(message, intent, user_id)
 
         case "download_series":
-            await _handle_download_series(message, intent)
+            await _handle_download_series(message, intent, user_id)
 
         case "clarify":
             clarify_msg = intent.get("clarify_message") or "Could you give me more details?"
@@ -200,3 +242,28 @@ async def handle_message(message: Message) -> None:
             chat_response = intent.get("chat_response") or "I'm here to help you download movies and series! Just tell me what you want to watch."
             add_message(user_id, "assistant", chat_response)
             await message.answer(chat_response)
+
+@router.callback_query(F.data.startswith("q:"))
+async def on_quality_selected(query: CallbackQuery) -> None:
+    user_id = query.from_user.id
+    quality_label = query.data.split(":", 1)[1]
+    
+    intent = get_pending_request(user_id)
+    if not intent:
+        await query.answer("Session expired. Please request again.", show_alert=True)
+        return
+        
+    await query.answer()
+    
+    # Clean up the inline keyboard message
+    await query.message.delete()
+    
+    intent["quality"] = quality_label
+    intent["_quality_selected"] = True
+    clear_pending_request(user_id)
+    
+    if intent["intent"] == "download_movie":
+        await _handle_download_movie(query.message, intent, user_id)
+    else:
+        await _handle_download_series(query.message, intent, user_id)
+

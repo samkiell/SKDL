@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase'
 import { getFreshCdnUrl } from '@/lib/moviebox'
+import { Metadata } from 'next'
+import PlayerClient from './PlayerClient'
 
 interface MediaRow {
   id: string
@@ -12,6 +14,62 @@ interface MediaRow {
   episode: number | null
   expires_at: string
   subject_id?: string
+  poster_url?: string
+  description?: string
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}): Promise<Metadata> {
+  const { id } = await params
+  
+  try {
+    const supabase = getSupabaseClient()
+    const { data } = await supabase
+      .from('media')
+      .select('*')
+      .eq('id', id)
+      .single()
+      
+    if (data) {
+      const row = data as MediaRow
+      const desc = row.description || `Watch ${row.title} on SKDL via samkiel.online`
+      return {
+        title: `${row.title} — SKDL`,
+        description: desc,
+        openGraph: {
+          title: `${row.title} — SKDL`,
+          description: desc,
+          siteName: 'SKDL',
+          images: row.poster_url ? [{ url: row.poster_url }] : [],
+        },
+        twitter: {
+          card: 'summary_large_image',
+          title: `${row.title} — SKDL`,
+          images: row.poster_url ? [row.poster_url] : [],
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Metadata generation failed for id:', id, e)
+  }
+
+  // Fallback if not found or errored out
+  return {
+    title: 'SKDL',
+    description: 'The AI-powered media delivery platform.',
+    openGraph: {
+      title: 'SKDL',
+      description: 'The AI-powered media delivery platform.',
+      siteName: 'SKDL',
+    },
+    twitter: {
+      card: 'summary',
+      title: 'SKDL',
+    }
+  }
 }
 
 function ExpiredPage({ title }: { title: string }) {
@@ -74,17 +132,7 @@ function PlayerPage({ row, proxyUrl }: { row: MediaRow; proxyUrl: string }) {
           </p>
         </div>
 
-        <div className="relative w-full overflow-hidden rounded-xl outline outline-1 outline-white/10 bg-black shadow-2xl">
-          <video
-            controls
-            preload="metadata"
-            playsInline
-            className="w-full h-auto aspect-video outline-none"
-            src={proxyUrl}
-          >
-            Your browser does not support HTML5 video playback.
-          </video>
-        </div>
+        <PlayerClient proxyUrl={proxyUrl} />
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
           <a

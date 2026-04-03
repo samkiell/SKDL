@@ -110,7 +110,7 @@ export default function LandingPage() {
       <section className={styles.hero}>
         <div className={styles.heroGlow}></div>
         <div className={`${styles.heroContent} ${styles.reveal}`}>
-          <span className={styles.heroLabel}>CINEMATIC STREAMING & DOWNLOADS</span>
+          <span className={styles.heroLabel}>AI-POWERED CINEMATIC STREAMING & DOWNLOADS</span>
           <h1 className={styles.heroTitle}>Your Personal<br />Cinema Hub</h1>
           <p className={styles.heroDesc} style={{ fontWeight: '500', color: 'var(--foreground)', fontStyle: 'italic', marginBottom: '0.5rem' }}>
             "Nextflix and chill with skdl"
