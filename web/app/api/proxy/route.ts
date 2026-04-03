@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const url = searchParams.get('url')
-
+  const filename = searchParams.get('filename')
+  const isDownloadFile = searchParams.get('dl') === '1'
+  
   if (!url) {
     return new NextResponse('Missing URL', { status: 400 })
   }
@@ -59,12 +61,17 @@ export async function GET(request: NextRequest) {
         },
       })
     }
+    
+    let contentDisposition = 'inline'
+    if (filename) {
+      contentDisposition = `${isDownloadFile ? 'attachment' : 'inline'}; filename="${filename}"`
+    }
 
     return new NextResponse(response.body, {
       status: 200,
       headers: {
         'Content-Type': response.headers.get('Content-Type') || 'video/mp4',
-        'Content-Disposition': 'inline', 
+        'Content-Disposition': contentDisposition, 
         'Cache-Control': 'no-cache',
         'Accept-Ranges': 'bytes', // Enable seeking if the source supports it
       },

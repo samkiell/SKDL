@@ -16,16 +16,16 @@ interface MediaRow {
 
 function ExpiredPage({ title }: { title: string }) {
   return (
-    <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        <div className="text-4xl mb-4">⏳</div>
-        <h1 className="text-xl font-semibold text-white mb-2">{title}</h1>
-        <p className="text-gray-400 mb-6">This download link has expired.</p>
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center px-4 md:px-6 font-sans text-white">
+      <div className="text-center w-full max-w-md border border-white/10 p-8 rounded-xl bg-[#0a0a0a]">
+        <div className="text-3xl mb-4 text-zinc-500">⏳</div>
+        <h1 className="text-xl font-medium mb-2">{title}</h1>
+        <p className="text-sm text-zinc-400 mb-8 font-mono">LINK_EXPIRED_OR_INVALID</p>
         <a
           href="https://t.me/SK_DLBOT"
-          className="inline-block bg-white text-black font-medium px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors"
+          className="block w-full bg-white text-black text-sm font-bold px-6 py-3.5 rounded-md hover:bg-zinc-200 transition-colors uppercase tracking-wider"
         >
-          Request again on Telegram
+          Request Again on Telegram
         </a>
       </div>
     </div>
@@ -36,7 +36,7 @@ function mediaMetaLine(row: MediaRow): string {
   const bits: string[] = []
   bits.push(row.type === 'series' ? 'Series' : 'Movie')
   if (row.type === 'series' && row.season && row.episode) {
-    bits.push(`S${row.season}E${row.episode}`)
+    bits.push(`S${row.season.toString().padStart(2, '0')}E${row.episode.toString().padStart(2, '0')}`)
   }
   if (row.quality) {
     bits.push(row.quality)
@@ -44,55 +44,68 @@ function mediaMetaLine(row: MediaRow): string {
   return bits.join(' • ')
 }
 
+function getSafeFilename(row: MediaRow): string {
+  let name = row.title.replace(/[^a-zA-Z0-9.\- _]/g, '').trim()
+  if (row.type === 'series' && row.season && row.episode) {
+    name += ` - S${row.season.toString().padStart(2, '0')}E${row.episode.toString().padStart(2, '0')}`
+  }
+  return name + '.mp4'
+}
+
 function PlayerPage({ row, proxyUrl }: { row: MediaRow; proxyUrl: string }) {
+  const safeFilename = getSafeFilename(row)
+  
+  // Create a specific download URL that instructs the proxy to use attachment disposition
+  const downloadUrl = `${proxyUrl}&filename=${encodeURIComponent(safeFilename)}&dl=1`
+
   return (
-    <main className="min-h-screen bg-[#0b1014] text-white px-4 py-6 md:py-10">
-      <div className="mx-auto max-w-6xl">
-        <div className="relative overflow-hidden rounded-2xl border border-teal-500/20 bg-gradient-to-br from-[#0d1e22] via-[#12131b] to-[#1c1410] p-4 md:p-7">
-          <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-teal-400/15 blur-3xl" />
-          <div className="pointer-events-none absolute -right-20 bottom-0 h-52 w-52 rounded-full bg-orange-400/10 blur-3xl" />
-
-          <div className="relative z-10 mb-5 md:mb-7">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-teal-200/80">SKDL Private Screening</p>
-            <h1 className="mt-2 text-2xl md:text-4xl font-bold text-white font-serif">
-              {row.title}
-            </h1>
-            <p className="mt-2 text-sm md:text-base text-zinc-300">{mediaMetaLine(row)}</p>
-          </div>
-
-          <div className="relative z-10 overflow-hidden rounded-xl border border-white/15 bg-black/50 shadow-[0_15px_40px_rgba(0,0,0,0.35)]">
-            <video
-              controls
-              preload="metadata"
-              playsInline
-              className="w-full aspect-video bg-black"
-              src={proxyUrl}
-            >
-              Your browser does not support HTML5 video playback.
-            </video>
-          </div>
-
-          <div className="relative z-10 mt-5 flex flex-wrap gap-3">
-            <a
-              href={proxyUrl}
-              download
-              className="inline-flex items-center rounded-lg bg-teal-400 px-5 py-2.5 text-sm font-semibold text-[#072227] hover:bg-teal-300"
-            >
-              Download File
-            </a>
-            <a
-              href="https://t.me/SK_DLBOT"
-              className="inline-flex items-center rounded-lg border border-zinc-500/60 bg-zinc-900/60 px-5 py-2.5 text-sm font-medium text-zinc-100 hover:bg-zinc-800"
-            >
-              Request Another on Telegram
-            </a>
-          </div>
+    <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center px-4 py-8 md:py-12 selection:bg-white/20 font-sans">
+      <div className="w-full max-w-5xl space-y-6 md:space-y-8">
+        
+        <div className="space-y-1.5 md:space-y-2">
+          <p className="text-[10px] md:text-xs font-mono text-zinc-500 uppercase tracking-widest">
+            SKDL_STREAM // PRIVATE
+          </p>
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight">
+            {row.title}
+          </h1>
+          <p className="text-xs md:text-sm text-zinc-400 font-mono pt-1">
+            {mediaMetaLine(row)}
+          </p>
         </div>
+
+        <div className="relative w-full overflow-hidden rounded-xl outline outline-1 outline-white/10 bg-black shadow-2xl">
+          <video
+            controls
+            preload="metadata"
+            playsInline
+            className="w-full h-auto aspect-video outline-none"
+            src={proxyUrl}
+          >
+            Your browser does not support HTML5 video playback.
+          </video>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
+          <a
+            href={downloadUrl}
+            download={safeFilename}
+            className="flex-1 flex justify-center items-center bg-white text-black text-xs md:text-sm font-bold px-6 py-4 rounded-md hover:bg-zinc-200 transition-colors uppercase tracking-wider"
+          >
+            Download File
+          </a>
+          <a
+            href="https://t.me/SK_DLBOT"
+            className="flex-1 flex justify-center items-center bg-transparent border border-white/20 text-white text-xs md:text-sm font-bold px-6 py-4 rounded-md hover:bg-white/5 transition-colors uppercase tracking-wider"
+          >
+            Request Another
+          </a>
+        </div>
+
       </div>
     </main>
   )
 }
-
 export const dynamic = 'force-dynamic'
 
 export default async function LinkPage({
