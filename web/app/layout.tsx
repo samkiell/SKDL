@@ -21,6 +21,11 @@ const jbMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'SKDL — Netflix and Chill with SKDL',
   description: 'Instant AI-Powered TV & Movie Downloads.',
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/SKDL.png',
+  },
 }
 
 export default function RootLayout({
