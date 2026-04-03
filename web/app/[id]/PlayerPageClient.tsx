@@ -77,17 +77,17 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-8 pb-12 px-4 selection:bg-white/20 font-sans">
-      <div className="w-full max-w-5xl space-y-6 md:space-y-8">
+    <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-4 md:pt-12 pb-12 px-4 selection:bg-white/20 font-sans">
+      <div className="w-full max-w-5xl space-y-5 md:space-y-8">
         
-        <div className="space-y-1.5 md:space-y-2">
+        <div className="space-y-1.5 md:space-y-2 text-center md:text-left">
           <p className="text-[10px] md:text-xs font-mono text-zinc-500 uppercase tracking-widest">
             SKDL_STREAM // PRIVATE
           </p>
-          <h1 className="text-2xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight">
+          <h1 className="text-xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-white leading-tight">
             {row.title}
           </h1>
-          <p className="text-xs md:text-sm text-zinc-400 font-mono pt-1">
+          <p className="text-[10px] md:text-sm text-zinc-400 font-mono">
             {mediaMetaLine(row)}
           </p>
         </div>

@@ -34,12 +34,28 @@ body {
 
 /* Custom Plyr Overrides */
 .plyr__time--current {
-  font-size: 1.1rem !important; /* Larger font */
+  font-size: 1.1rem !important; /* Larger font for desktop */
   font-weight: 700 !important;
   color: #e8ff47 !important; 
   padding: 0 12px !important;
   min-width: 80px !important; /* Larger width */
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .plyr__time--current {
+    font-size: 0.9rem !important;
+    padding: 0 6px !important;
+    min-width: 60px !important;
+  }
+  
+  :root {
+    --plyr-control-spacing: 8px; /* Tighter controls on mobile */
+  }
+
+  .plyr__volume {
+    display: none !important; /* Hide volume on mobile to save space */
+  }
 }
 
 /* Compact volume style - only expands on hover */
