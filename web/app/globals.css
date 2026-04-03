@@ -36,7 +36,7 @@ body {
 .plyr__time--current {
   font-size: 1.1rem !important; /* Larger font for desktop */
   font-weight: 700 !important;
-  color: #e8ff47 !important; 
+  color: #a1a1aa !important; /* Zinc-400 matching logo dot */
   padding: 0 12px !important;
   min-width: 80px !important; /* Larger width */
   text-align: center;

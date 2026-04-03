@@ -56,8 +56,8 @@ export default function RootLayout({
         <footer className="w-full border-t border-white/5 bg-black py-12 mt-auto">
           <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6">
             <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
-              <Link href="/privacy" className="hover:text-[#e8ff47] transition-colors">Privacy Policy</Link>
-              <Link href="/terms" className="hover:text-[#e8ff47] transition-colors">Terms of Use</Link>
+              <Link href="/privacy" className="hover:text-zinc-400 transition-colors">Privacy Policy</Link>
+              <Link href="/terms" className="hover:text-zinc-400 transition-colors">Terms of Use</Link>
             </div>
             
             <div className="text-center text-[10px] font-mono text-zinc-700 uppercase tracking-widest">

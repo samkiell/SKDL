@@ -149,23 +149,61 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* Action / Countdown Center */}
-        <div className="w-full max-w-sm space-y-6">
-          {counter > 0 ? (
-            <div className="text-center py-12 border border-dashed border-white/10 bg-white/[0.02] rounded-2xl relative overflow-hidden group">
-              <div className="absolute top-0 left-0 h-1 bg-[#e8ff47] transition-all duration-1000 ease-linear" style={{ width: `${(10 - counter) * 10}%` }} />
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-2">Syncing Server Nodes...</p>
-              <p className="text-6xl font-space font-bold text-white tabular-nums">{counter}</p>
-              <div className="mt-4 flex justify-center gap-1">
-                {[...Array(10)].map((_, i) => (
-                    <div key={i} className={`w-1 h-1 rounded-full ${10 - i > counter ? 'bg-[#e8ff47]' : 'bg-white/10'}`} />
-                ))}
-              </div>
+        <div className="w-full max-w-sm space-y-8 flex flex-col items-center">
+            {/* Syncing / Ring Section */}
+            <div className="relative w-32 h-32 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90">
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="58"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="transparent"
+                  className="text-white/5"
+                />
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="58"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="transparent"
+                  strokeDasharray="364.4"
+                  strokeDashoffset={364.4 * (counter / 10)}
+                  className="text-zinc-400 transition-all duration-1000 linear"
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-5xl font-space font-bold text-white tabular-nums">
+                {counter > 0 ? counter : '✓'}
+              </span>
             </div>
-          ) : (
+
+            <div className="text-center space-y-1">
+                <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                    {counter > 0 ? 'Syncing Server Nodes...' : 'Secure Link Ready'}
+                </p>
+            </div>
+
+            {/* In-Flow Ad Slot */}
+            <div className="w-full h-[200px] bg-zinc-900/40 rounded-2xl border border-white/5 flex flex-col items-center justify-center space-y-2 relative overflow-hidden group">
+                <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/50 rounded text-[7px] font-mono text-zinc-600 uppercase tracking-tighter border border-white/5">
+                    Sponsored
+                </div>
+                <div className="text-zinc-700 font-mono text-[9px] animate-pulse">
+                    AD_PLACEMENT_300x250
+                </div>
+                <div className="w-32 h-32 opacity-5 blur-2xl bg-zinc-400 rounded-full absolute -bottom-16 -left-16"></div>
+            </div>
+
             <button
               onClick={handleGetLink}
-              disabled={loading || isMuxing}
-              className="group relative w-full overflow-hidden bg-white text-black text-sm font-black px-8 py-5 rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest disabled:opacity-50 disabled:cursor-wait"
+              disabled={counter > 0 || loading || isMuxing}
+              className={`group relative w-full overflow-hidden text-sm font-black px-8 py-6 rounded-xl transition-all uppercase tracking-widest ${
+                counter > 0 
+                  ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed opacity-50' 
+                  : 'bg-zinc-400 text-black hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(161,161,170,0.2)]'
+              }`}
             >
               <div className="relative z-10 flex items-center justify-center gap-2">
                 {isMuxing ? (
@@ -177,11 +215,10 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
                         <span>{statuses[statusIndex]}</span>
                     </>
                 ) : (
-                    <span>{loading ? 'GENERATING LINK...' : 'GET DOWNLOAD LINK'}</span>
+                    <span>{loading ? 'GENERATING LINK...' : counter > 0 ? `Please Wait (${counter}s)` : 'DOWNLOAD NOW'}</span>
                 )}
               </div>
             </button>
-          )}
 
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">

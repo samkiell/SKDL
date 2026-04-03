@@ -78,10 +78,10 @@ export default function DownloadModal({ result, onClose, onDownload }: DownloadM
                 fill="transparent"
                 strokeDasharray="251.2"
                 strokeDashoffset={251.2 * (countdown / 10)}
-                className="text-white transition-all duration-1000 linear"
+                className="text-zinc-400 transition-all duration-1000 linear"
               />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-4xl font-space font-bold">
+            <span className="absolute inset-0 flex items-center justify-center text-4xl font-space font-bold text-white">
               {countdown}
             </span>
           </div>
@@ -99,13 +99,12 @@ export default function DownloadModal({ result, onClose, onDownload }: DownloadM
             </div>
             {/* 
                 DROP AD SCRIPT HERE 
-                Example: <script src="..."></script>
             */}
             <div className="text-zinc-600 font-mono text-[10px] animate-pulse">
                 AD_SLOT_300x250
             </div>
             
-            <div className="w-24 h-24 opacity-10 blur-xl bg-white rounded-full absolute -bottom-12 -left-12 group-hover:opacity-20 transition-opacity"></div>
+            <div className="w-24 h-24 opacity-10 blur-xl bg-zinc-400 rounded-full absolute -bottom-12 -left-12 group-hover:opacity-20 transition-opacity"></div>
           </div>
 
           {/* Actions */}
@@ -115,7 +114,7 @@ export default function DownloadModal({ result, onClose, onDownload }: DownloadM
               disabled={!isReady}
               className={`w-full py-4 rounded-xl font-space font-bold transition-all ${
                 isReady 
-                  ? 'bg-[#e8ff47] text-black hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(232,255,71,0.2)]' 
+                  ? 'bg-zinc-400 text-black hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(161,161,170,0.2)]' 
                   : 'bg-zinc-800 text-zinc-600 cursor-not-allowed opacity-50'
               }`}
             >
