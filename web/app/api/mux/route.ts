@@ -52,38 +52,43 @@ export async function POST(request: NextRequest) {
         })
     }
 
-    console.info('[api/mux] downloading source files...', { video: videoUrl, subs: subtitleUrl })
+    console.info('[api/mux] downloading subtitles...', { subs: subtitleUrl })
     
     // Download SRT (always small)
     await downloadFile(subtitleUrl, subtitleFile)
     
-    // For video, we could stream it or download it.
-    // Given Railway's /tmp is limited, let's try to pass the URL directly to FFmpeg first.
-    // If that fails, we can download it. 
-    // Usually FFmpeg handles URLs well if headers are spoofed.
-    // But the instructions said "Stream video to /tmp". 
-    // I'll follow the instructions but note that large files might fill /tmp.
-    
-    // Wait, let's try to stream it to /tmp
-    await downloadFile(videoUrl, videoFile)
+    console.info('[api/mux] starting streaming mux with ffmpeg...', { video: videoUrl, subs: subtitleFile })
 
-    console.info('[api/mux] muxing files using ffmpeg...', { video: videoFile, subs: subtitleFile })
+    // Build headers string for FFmpeg
+    const ffHeaders = [
+        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        'Referer: https://fmoviesunblocked.net/',
+        'Origin: https://h5.aoneroom.com',
+    ].join('\r\n') + '\r\n'
 
-    // Run FFmpeg command
-    // ffmpeg -i video.mp4 -i subs.srt -c copy -c:s srt output.mkv
+    // Run FFmpeg command - Instant start via streaming input
     return new Promise<Response>((resolve) => {
         const ffmpeg = spawn(ffmpegPath, [
-            '-i', videoFile,
+            '-headers', ffHeaders,
+            '-i', videoUrl,
             '-i', subtitleFile,
-            '-c', 'copy',
-            '-c:s', 'srt',
-            '-y', // Overwrite output
+            '-map', '0:v',    // Map first input video
+            '-map', '0:a',    // Map first input audio
+            '-map', '1:s',    // Map second input (SRT) subtitle
+            '-c', 'copy',     // Stream copy both video and audio
+            '-c:s', 'srt',     // Subtitle codec
+            '-metadata:s:s:0', 'language=eng',
+            '-y',             // Overwrite output
+            '-f', 'matroska', // Output format
             outputFile
         ])
 
         ffmpeg.stderr.on('data', (data) => {
-            // FFmpeg logs to stderr
-            console.log(`[ffmpeg logger]: ${data}`)
+            // Log one line only for progress to avoid cluttering but show activity
+            const msg = data.toString()
+            if (msg.includes('bitrate=') || msg.includes('frames=')) {
+                console.log(`[ffmpeg]: ${msg.trim()}`)
+            }
         })
 
         ffmpeg.on('close', (code) => {
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
                 return
             }
 
-            console.info('[api/mux] muxing complete, streaming back to client...', outputFile)
+            console.info('[api/mux] mux complete, streaming back to client...', outputFile)
 
             const stat = fs.statSync(outputFile)
             const stream = fs.createReadStream(outputFile)
@@ -101,9 +106,9 @@ export async function POST(request: NextRequest) {
             // Cleanup temp files after stream finishes
             stream.on('close', () => {
                 try {
-                    fs.unlinkSync(videoFile)
-                    fs.unlinkSync(subtitleFile)
-                    fs.unlinkSync(outputFile)
+                    // We only have the SRT and Output to clean up now
+                    if (fs.existsSync(subtitleFile)) fs.unlinkSync(subtitleFile)
+                    if (fs.existsSync(outputFile)) fs.unlinkSync(outputFile)
                     console.info('[api/mux] cleaned up temp files.')
                 } catch (err) {
                     console.error('[api/mux] cleanup error:', err)

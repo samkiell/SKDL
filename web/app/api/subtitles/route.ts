@@ -57,11 +57,35 @@ export async function GET(request: NextRequest) {
     }
 
     if (!searchData.data || searchData.data.length === 0) {
+      console.warn('[api/subtitles] no results found for:', { imdbId, query: request.nextUrl.searchParams.get('query') })
       return NextResponse.json({ found: false })
     }
 
-    // 2. Get the file_id of the first subtitle
-    const fileId = searchData.data[0].attributes.files[0].file_id
+    console.info(`[api/subtitles] found ${searchData.data.length} potential matches. selecting best...`)
+    
+    // Log first few titles for user visibility
+    searchData.data.slice(0, 5).forEach((item: any, idx: number) => {
+        console.log(`  [${idx}] ${item.attributes.release} (ID: ${item.id})`)
+    })
+
+    // 2. Select the best matching file
+    // We prioritize titles that contain common keywords matching the media
+    let bestIndex = 0
+    const keywords = ['WEB-DL', 'WEBRip', 'DVDRip', 'Bluray', 'BRRip', '1080p', '720p']
+    
+    for (let i = 0; i < searchData.data.length; i++) {
+        const releaseName = (searchData.data[i].attributes.release || '').toUpperCase()
+        if (keywords.some(k => releaseName.includes(k.toUpperCase()))) {
+            bestIndex = i
+            console.info(`[api/subtitles] selected high-quality match: ${searchData.data[i].attributes.release}`)
+            break
+        }
+    }
+
+    const selectedSub = searchData.data[bestIndex]
+    const fileId = selectedSub.attributes.files[0].file_id
+
+    console.info('[api/subtitles] resolving download link for file_id:', fileId)
 
     // 3. Get the download link
     const downloadRes = await fetch('https://api.opensubtitles.com/api/v1/download', {
