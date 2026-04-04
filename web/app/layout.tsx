@@ -178,7 +178,9 @@ export default function RootLayout({
           <header className="w-full border-b border-white/10 bg-black/80 backdrop-blur-md sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
               <Link href="/" className="transition-transform active:scale-95">
-                <img src="/SKDL.png" alt="SKDL Logo" className="h-7 md:h-9 w-auto object-contain" />
+                <span className="font-space font-bold tracking-tighter text-white text-2xl">
+                  SKDL<span className="text-yellow-400">.</span>
+                </span>
               </Link>
               <nav className="flex gap-6 items-center text-sm font-mono text-zinc-400">
                 <Link href="/discover" className="hover:text-white transition-colors">DISCOVER</Link>

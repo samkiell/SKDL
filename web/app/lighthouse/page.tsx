@@ -13,7 +13,6 @@ import { format, formatDistanceToNow } from 'date-fns'
 import LinksChart from './components/LinksChart'
 import TypeBreakdownChart from './components/TypeBreakdownChart'
 import Link from 'next/link'
-import Image from 'next/image'
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null)
@@ -46,13 +45,9 @@ export default function DashboardPage() {
         <div className="relative">
           <div className="w-12 h-12 rounded-full border-t-2 border-r-2 border-blue-500 animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <Image 
-              src="/skdl.png" 
-              alt="Logo" 
-              width={20} 
-              height={20} 
-              className="w-5 h-5 object-contain opacity-80"
-            />
+            <span className="font-space font-bold tracking-tighter text-white text-[10px] opacity-80">
+              SKDL<span className="text-yellow-400">.</span>
+            </span>
           </div>
         </div>
         <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.3em] font-bold">Synchronizing Terminal...</p>

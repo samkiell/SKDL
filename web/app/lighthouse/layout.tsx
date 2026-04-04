@@ -2,7 +2,6 @@
 
 import React from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
   LayoutDashboard, 
@@ -49,9 +48,11 @@ export default function LighthouseLayout({
     <div className="flex min-h-screen bg-[#050505] text-zinc-400 font-sans selection:bg-white/10 overflow-hidden">
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-white/5 bg-black/80 backdrop-blur-md z-50 flex items-center justify-between px-6">
-        <div className="flex items-center gap-2">
-          <Image src="/skdl.png" alt="Logo" width={32} height={32} />
-          <span className="font-space font-bold tracking-tighter text-white text-lg">LIGHTHOUSE</span>
+        <div className="flex items-center gap-3">
+          <span className="font-space font-bold tracking-tighter text-white text-xl">
+            SKDL<span className="text-yellow-400">.</span>
+          </span>
+          <span className="font-space font-extrabold tracking-tighter text-white text-lg opacity-40">LIGHTHOUSE</span>
         </div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-white">
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -66,14 +67,10 @@ export default function LighthouseLayout({
         <div className="flex flex-col h-full">
           <div className="p-8 pb-12">
             <Link href="/lighthouse" className="flex items-center gap-3 px-2 group">
-              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-300 group-hover:bg-white/10 shadow-[0_0_20px_rgba(255,255,255,0.02)] overflow-hidden">
-                <Image 
-                  src="/skdl.png" 
-                  alt="SKDL" 
-                  width={24} 
-                  height={24} 
-                  className="w-6 h-6 object-contain"
-                />
+              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-300 group-hover:bg-white/10 shadow-[0_0_20px_rgba(255,255,255,0.02)]">
+                <span className="font-space font-bold tracking-tighter text-white text-sm">
+                  S<span className="text-yellow-400">.</span>
+                </span>
               </div>
               <div className="flex flex-col">
                 <span className="font-space font-bold tracking-tighter text-white text-xl uppercase leading-none">Lighthouse</span>
