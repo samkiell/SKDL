@@ -91,7 +91,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
         </div>
 
         {/* Player Container */}
-        <div className="space-y-0">
+        <div>
           <div className="w-full rounded-2xl overflow-hidden border border-white/5 bg-black min-h-[300px] shadow-2xl">
             {isMounted ? (
                 <PlayerClient 
@@ -108,7 +108,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
             )}
           </div>
 
-          <div className="flex flex-col items-center space-y-4 md:space-y-6 pt-0 mt-1 md:mt-5 pb-6 md:pb-12">
+          <div className="flex flex-col items-center space-y-1 md:space-y-6 pt-0 mt-1 md:mt-2 pb-6 md:pb-12">
               <div className="w-full max-w-2xl flex flex-col sm:flex-row gap-3 md:gap-4">
                   <button
                       onClick={handleDownloadMp4}

@@ -99,15 +99,10 @@ export const metadata: Metadata = {
 
   // Icons
   icons: {
-    icon: [
-      { url: '/favicon.png', type: 'image/png' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-    ],
+    icon: '/favicon.png',
     shortcut: '/favicon.png',
     apple: [
-      { url: '/SKDL.png' },
-      { url: '/apple-touch-icon-180x180.png', sizes: '180x180', type: 'image/png' },
+      { url: '/SKDL.png', sizes: '180x180', type: 'image/png' },
     ],
   },
 
@@ -117,7 +112,6 @@ export const metadata: Metadata = {
   // Verification (add your tokens once you connect Search Console)
   verification: {
     google: 'YOUR_GOOGLE_SEARCH_CONSOLE_TOKEN',
-    // yandex: 'YOUR_YANDEX_TOKEN',
   },
 }
 
@@ -182,9 +176,9 @@ export default function RootLayout({
 
         <ConditionalHeader>
           <header className="w-full border-b border-white/10 bg-black/80 backdrop-blur-md sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between">
-              <Link href="/" className="text-3xl font-space font-bold tracking-tighter text-white">
-                SKDL<span className="text-yellow-400">.</span>
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
+              <Link href="/" className="transition-transform active:scale-95">
+                <img src="/SKDL.png" alt="SKDL Logo" className="h-7 md:h-9 w-auto object-contain" />
               </Link>
               <nav className="flex gap-6 items-center text-sm font-mono text-zinc-400">
                 <Link href="/discover" className="hover:text-white transition-colors">DISCOVER</Link>
