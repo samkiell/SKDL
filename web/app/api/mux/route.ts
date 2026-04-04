@@ -11,7 +11,6 @@ export const runtime = 'nodejs'
 
 let ffmpegPath = ffmpegInstaller.path
 
-// Railway/Nixpacks: Attempt to use system FFmpeg if available (added via nixpacks.toml)
 try {
     const { execSync } = require('child_process')
     const systemFfmpeg = execSync('which ffmpeg').toString().trim()
@@ -21,6 +20,10 @@ try {
     }
 } catch (e) {
     console.info('[api/mux] fallback to installer binary:', ffmpegPath)
+    // Ensure executable bit for installer binary if on linux
+    if (os.platform() === 'linux') {
+        try { fs.chmodSync(ffmpegPath, 0o755) } catch(e) {}
+    }
 }
 
 export async function GET(request: NextRequest) {
@@ -83,7 +86,7 @@ async function handleMuxRequest(request: NextRequest) {
 
     const hasSubs = subtitleUrl && subtitleUrl !== 'not_found'
     if (hasSubs) {
-        console.info('[api/mux] downloading subtitles...', { subs: subtitleUrl })
+        // console.info('[api/mux] downloading subtitles...', { subs: subtitleUrl }) // Log less verbose URL to avoid cluttering logs
         try {
             await downloadFile(subtitleUrl, subtitleFile)
         } catch (e) {
@@ -145,6 +148,7 @@ async function handleMuxRequest(request: NextRequest) {
         'pipe:1'          // Output to STDOUT
     )
 
+    console.info('[api/mux] spawning ffmpeg:', { path: ffmpegPath, argsLength: ffmpegArgs.length })
     const ffmpeg = spawn(ffmpegPath, ffmpegArgs)
 
     // We use a Readable Stream to wrap the FFmpeg stdout
@@ -159,9 +163,9 @@ async function handleMuxRequest(request: NextRequest) {
                     // console.log(`[ffmpeg]: ${msg.trim()}`) // Keep log quiet to avoid Vercel log limits
                 }
             })
-            ffmpeg.on('close', (code) => {
+            ffmpeg.on('close', (code, signal) => {
                 if (code !== 0) {
-                    console.error('[api/mux] ffmpeg failed with code', code)
+                    console.error(`[api/mux] ffmpeg failed with code ${code} and signal ${signal}`)
                 }
                 // Cleanup subtitle temp file
                 if (hasLoadedSubs) {
