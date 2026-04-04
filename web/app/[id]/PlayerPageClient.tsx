@@ -91,7 +91,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
         </div>
 
         {/* Player Container */}
-        <div className="space-y-8">
+        <div className="space-y-2 md:space-y-4">
           <div className="w-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] rounded-2xl overflow-hidden border border-white/5 bg-black min-h-[300px]">
             {isMounted ? (
                 <PlayerClient 
@@ -108,8 +108,8 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
             )}
           </div>
 
-          <div className="flex flex-col items-center space-y-10 py-4">
-              <div className="w-full max-w-2xl flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col items-center space-y-6 pt-2 pb-12">
+              <div className="w-full max-w-2xl flex flex-col sm:flex-row gap-3 md:gap-4">
                   <button
                       onClick={handleDownloadMp4}
                       className="flex-1 flex justify-center items-center bg-[#121212] border border-white/10 text-white text-xs md:text-sm font-black px-8 py-5 rounded-lg hover:bg-zinc-800 transition-all uppercase tracking-[0.2em] font-mono"
@@ -126,7 +126,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
               </div>
 
               {subtitleUrl && (
-                  <div className="text-center">
+                  <div className="text-center pt-2">
                       <a 
                           href={`/api/proxy?url=${encodeURIComponent(subtitleUrl || '')}&filename=${encodeURIComponent(brandedFilename)}.srt&dl=1`} 
                           className="text-[10px] font-mono text-zinc-500 hover:text-white transition-colors underline underline-offset-8 decoration-zinc-800 uppercase tracking-widest"
@@ -136,7 +136,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
                   </div>
               )}
 
-              <div className="pt-4">
+              <div className="pt-2">
                   <a
                       href="https://t.me/SK_DLBOT"
                       target="_blank"
