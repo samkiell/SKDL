@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { spawn } from 'child_process'
+import { Readable } from 'stream'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
@@ -177,6 +178,7 @@ async function handleMuxRequest(request: NextRequest) {
     }
 
     ffmpegArgs.push(
+        '-max_alloc', '25M', // Hard cap FFmpeg memory allocation for buffers
         '-y',             // Overwrite
         '-f', 'matroska', // Output format
         'pipe:1'          // Output to STDOUT
@@ -185,39 +187,55 @@ async function handleMuxRequest(request: NextRequest) {
     console.info('[api/mux] spawning ffmpeg:', { path: ffmpegPath, argsLength: ffmpegArgs.length })
     const ffmpeg = spawn(ffmpegPath, ffmpegArgs)
 
-    // We use a Readable Stream to wrap the FFmpeg stdout
-    const stream = new ReadableStream({
-        start(controller) {
-            ffmpeg.stdout.on('data', (chunk) => {
-                controller.enqueue(chunk)
-            })
-            ffmpeg.stderr.on('data', (data) => {
-                const msg = data.toString()
-                if (msg.includes('bitrate=') || msg.includes('frames=')) {
-                    // console.log(`[ffmpeg]: ${msg.trim()}`) // Keep log quiet to avoid Vercel log limits
-                }
-            })
-            ffmpeg.on('close', (code, signal) => {
-                if (code !== 0) {
-                    console.error(`[api/mux] ffmpeg failed with code ${code} and signal ${signal}`)
-                }
-                // Cleanup subtitle temp file
-                if (hasLoadedSubs) {
-                    try { fs.unlinkSync(subtitleFile) } catch(e) {}
-                }
-                controller.close()
-            })
-            ffmpeg.on('error', (err) => {
-                console.error('[api/mux] ffmpeg spawn error:', err)
-                controller.error(err)
-            })
-        },
-        cancel() {
-            ffmpeg.kill()
+    // Handle process events outside the stream construction for clarity
+    ffmpeg.stderr.on('data', (data) => {
+        const msg = data.toString()
+        if (msg.includes('bitrate=') || msg.includes('frames=')) {
+            // console.log(`[ffmpeg]: ${msg.trim()}`)
         }
     })
+    ffmpeg.on('close', (code, signal) => {
+        if (code !== 0) {
+            console.error(`[api/mux] ffmpeg failed with code ${code} and signal ${signal}`)
+        }
+        if (hasLoadedSubs) {
+            try { fs.unlinkSync(subtitleFile) } catch(e) {}
+        }
+    })
+    ffmpeg.on('error', (err) => {
+        console.error('[api/mux] ffmpeg spawn error:', err)
+    })
 
-    return new NextResponse(stream, {
+    // We use Readable.toWeb to wrap the FFmpeg stdout with native backpressure
+    // This is critical for preventing OOM on Railway Free (512MB RAM)
+    // as it stops reading from FFmpeg if the user's connection is slow.
+    const webStream = Readable.toWeb(ffmpeg.stdout)
+    
+    // Use a wrapper to ensure FFmpeg is killed if the request is aborted
+    const responseStream = new ReadableStream({
+        async start(controller) {
+            const reader = (webStream as any).getReader();
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        controller.close();
+                        break;
+                    }
+                    controller.enqueue(value);
+                }
+            } catch (err) {
+                controller.error(err);
+            } finally {
+                reader.releaseLock();
+            }
+        },
+        cancel() {
+            ffmpeg.kill('SIGKILL');
+        }
+    });
+    
+    return new NextResponse(responseStream, {
         status: 200,
         headers: {
             'Content-Type': 'video/x-matroska',
