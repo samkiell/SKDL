@@ -146,7 +146,6 @@ async function handleMuxRequest(request: NextRequest) {
     // Start with global options (must come before any -i)
     const ffmpegArgs = [
         '-y',                        // Overwrite output files
-        '-max_alloc', '32M',         // Hard cap FFmpeg memory allocation
         '-headers', ffHeaders,
         '-reconnect', '1',
         '-reconnect_streamed', '1',
