@@ -104,12 +104,43 @@ export default function PlayerClient({ proxyUrl, imdbId, query, poster, onSubtit
     }
   }
 
+  const toggleFullscreen = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    if (!videoRef.current || !videoRef.current.parentElement) return
+
+    try {
+        if (document.fullscreenElement) {
+            await document.exitFullscreen()
+        } else {
+            await videoRef.current.parentElement.requestFullscreen()
+            if (screen.orientation && (screen.orientation as any).lock) {
+                await (screen.orientation as any).lock('landscape').catch(() => {})
+            }
+        }
+    } catch (err) {
+        console.error('Fullscreen/Orientation error:', err)
+    }
+  }
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+        if (!document.fullscreenElement) {
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock()
+            }
+        }
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
         if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
         if (e.code === 'ArrowRight') { if (videoRef.current) videoRef.current.currentTime += 10; }
         if (e.code === 'ArrowLeft') { if (videoRef.current) videoRef.current.currentTime -= 10; }
         if (e.code === 'KeyC') { if (videoRef.current) toggleCaptions(e as any); }
+        if (e.code === 'KeyF') { toggleFullscreen(); }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
@@ -210,7 +241,7 @@ export default function PlayerClient({ proxyUrl, imdbId, query, poster, onSubtit
                 )}
 
                 <button 
-                    onClick={(e) => { e.stopPropagation(); if (videoRef.current) if (document.fullscreenElement) document.exitFullscreen(); else videoRef.current.parentElement?.requestFullscreen(); }}
+                    onClick={toggleFullscreen}
                     className="text-white/70 hover:text-white"
                 >
                     <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M7 14H5v5l5-5-5-5v5zM19 5h-5v2h5v5l2-2V5zM14 19h5v-5l2 2v5h-5zM5 10V5h5L8 7l-3-3v5z"/></svg>
