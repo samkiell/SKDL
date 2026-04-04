@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-black text-white pt-24 pb-16 px-4 md:px-8 font-sans selection:bg-white/20">
+    <main className="min-h-screen bg-black text-white pt-10 md:pt-16 pb-16 px-4 md:px-8 font-sans selection:bg-white/20">
       <div className="max-w-3xl mx-auto space-y-12">
         <header className="space-y-4">
           <Link href="/" className="text-zinc-500 hover:text-[#e8ff47] transition-colors text-xs font-mono tracking-widest uppercase">
