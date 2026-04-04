@@ -142,13 +142,16 @@ async function handleMuxRequest(request: NextRequest) {
 
     console.info('[api/mux] starting streaming mux with ffmpeg...', { video: videoUrl })
 
-    // Build FFmpeg command with reconnection logic for stability
+    // Build FFmpeg command with low-memory and reconnection logic
     const ffmpegArgs = [
         '-headers', ffHeaders,
         '-reconnect', '1',
         '-reconnect_streamed', '1',
         '-reconnect_at_eof', '1',
-        '-reconnect_delay_max', '4',
+        '-reconnect_delay_max', '2',
+        '-probesize', '5M',          // Limit probe size to 5MB to save memory
+        '-analyzeduration', '5M',    // Limit analysis duration
+        '-fflags', 'nobuffer',       // Disable buffering for lower memory/latency
         '-i', videoUrl,
     ]
 
