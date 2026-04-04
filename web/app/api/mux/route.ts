@@ -11,9 +11,28 @@ export const runtime = 'nodejs'
 
 const ffmpegPath = ffmpegInstaller.path
 
+export async function GET(request: NextRequest) {
+  return handleMuxRequest(request)
+}
+
 export async function POST(request: NextRequest) {
+  return handleMuxRequest(request)
+}
+
+async function handleMuxRequest(request: NextRequest) {
   try {
-    const { videoUrl, subtitleUrl, filename } = await request.json()
+    let videoUrl, subtitleUrl, filename
+    if (request.method === 'GET') {
+        const searchParams = request.nextUrl.searchParams
+        videoUrl = searchParams.get('videoUrl')
+        subtitleUrl = searchParams.get('subtitleUrl')
+        filename = searchParams.get('filename')
+    } else {
+        const body = await request.json()
+        videoUrl = body.videoUrl
+        subtitleUrl = body.subtitleUrl
+        filename = body.filename
+    }
 
     if (!videoUrl || !subtitleUrl || !filename) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
@@ -82,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     ffmpegArgs.push(
         '-map', '0:v',    // Map first input video
-        '-map', '0:a',    // Map first input audio
+        '-map', '0:a?',    // Map first input audio (optional)
     )
 
     if (hasLoadedSubs) {

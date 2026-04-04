@@ -82,34 +82,22 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         try {
             const subRes = await fetch(`/api/subtitles?query=${encodeURIComponent(displayFilename)}&imdb_id=${data.imdb_id || ''}`)
             const subData = await subRes.json()
+            const subtitleUrl = subData.subtitleUrl || 'not_found'
             
-            const muxRes = await fetch('/api/mux', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    videoUrl: data.url,
-                    subtitleUrl: subData.subtitleUrl || 'not_found',
-                    filename: displayFilename,
-                    imdbId: data.imdb_id
-                })
-            })
-
-            if (!muxRes.ok) throw new Error('Muxing failed')
-
-            const blob = await muxRes.blob()
-            const url = window.URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `${brandedFilename}.mkv`
-            document.body.appendChild(a)
-            a.click()
-            a.remove()
+            // Using direct window.location for streaming instead of fetch().blob()
+            // This prevents browser memory limits and Vercel fetch timeouts.
+            const muxUrl = `/api/mux?videoUrl=${encodeURIComponent(data.url)}&subtitleUrl=${encodeURIComponent(subtitleUrl)}&filename=${encodeURIComponent(brandedFilename)}`
+            
+            window.location.href = muxUrl
         } catch (err) {
             console.error('MKV Muxing failed:', err)
             setError('Failed to mux MKV. Please try MP4 instead.')
         } finally {
-            setIsMuxing(false)
-            setLoading(false)
+            // Give the browser time to trigger the download before resetting states
+            setTimeout(() => {
+                setIsMuxing(false)
+                setLoading(false)
+            }, 5000)
         }
         return
       }
