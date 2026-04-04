@@ -9,7 +9,19 @@ import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 // Force Node.js runtime for FFmpeg usage
 export const runtime = 'nodejs'
 
-const ffmpegPath = ffmpegInstaller.path
+let ffmpegPath = ffmpegInstaller.path
+
+// Railway/Nixpacks: Attempt to use system FFmpeg if available (added via nixpacks.toml)
+try {
+    const { execSync } = require('child_process')
+    const systemFfmpeg = execSync('which ffmpeg').toString().trim()
+    if (systemFfmpeg) {
+        ffmpegPath = systemFfmpeg
+        console.info('[api/mux] using system ffmpeg binary:', ffmpegPath)
+    }
+} catch (e) {
+    console.info('[api/mux] fallback to installer binary:', ffmpegPath)
+}
 
 export async function GET(request: NextRequest) {
   return handleMuxRequest(request)
