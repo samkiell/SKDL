@@ -71,11 +71,11 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
   }, [row.type, row.season, row.episode, row.quality, row.size])
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-8 md:pt-16 pb-24 px-4 md:px-6 font-sans">
-      <div className="w-full max-w-5xl space-y-12">
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center pt-4 md:pt-16 pb-12 md:pb-24 px-4 md:px-6 font-sans">
+      <div className="w-full max-w-5xl space-y-4 md:space-y-12">
         
         <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-start">
-          <div className="space-y-6 flex-1 text-left flex flex-col justify-center h-full py-2">
+          <div className="space-y-3 md:space-y-6 flex-1 text-left flex flex-col justify-center h-full py-1 md:py-2">
             <div className="space-y-2">
               <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-[0.4em] font-bold">
                 {tagline}
@@ -91,8 +91,8 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
         </div>
 
         {/* Player Container */}
-        <div className="space-y-2 md:space-y-4">
-          <div className="w-full shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] rounded-2xl overflow-hidden border border-white/5 bg-black min-h-[300px]">
+        <div className="space-y-0">
+          <div className="w-full rounded-2xl overflow-hidden border border-white/5 bg-black min-h-[300px] shadow-2xl">
             {isMounted ? (
                 <PlayerClient 
                   proxyUrl={proxyUrl} 
@@ -108,7 +108,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
             )}
           </div>
 
-          <div className="flex flex-col items-center space-y-6 pt-2 pb-12">
+          <div className="flex flex-col items-center space-y-4 md:space-y-6 pt-0 mt-1 md:mt-5 pb-6 md:pb-12">
               <div className="w-full max-w-2xl flex flex-col sm:flex-row gap-3 md:gap-4">
                   <button
                       onClick={handleDownloadMp4}
