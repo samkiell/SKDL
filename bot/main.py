@@ -11,6 +11,7 @@ from aiogram import Bot, Dispatcher
 
 from config import settings
 from handlers import start, movie, series, message, subtitle
+from services.supabase import update_bot_heartbeat
 
 # Configure logging
 logging.basicConfig(
@@ -20,6 +21,16 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+
+async def heartbeat_loop() -> None:
+    """Periodic task to update heartbeat in DB."""
+    while True:
+        try:
+            await update_bot_heartbeat()
+        except Exception:
+            pass
+        await asyncio.sleep(60)
 
 
 async def main() -> None:
@@ -35,6 +46,9 @@ async def main() -> None:
     dp.include_router(message.router)
 
     logger.info("SKDL Bot starting...")
+
+    # Start heartbeat in background
+    asyncio.create_task(heartbeat_loop())
 
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())

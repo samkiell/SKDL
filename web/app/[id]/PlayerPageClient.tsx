@@ -40,7 +40,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
   const [isMounted, setIsMounted] = useState(false)
   const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null)
   const [posterUrl] = useState<string | undefined>(row.poster_url)
-  const [tagline] = useState('SKDL_STREAM // ENCRYPTED WITH BEANS')
+  const [tagline] = useState('SKDL_stream // encrypted with beans')
 
   useEffect(() => {
     setIsMounted(true)

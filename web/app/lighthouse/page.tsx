@@ -59,7 +59,12 @@ export default function DashboardPage() {
     { name: 'Total Links', value: data?.stats.totalLinks, icon: Link2, color: 'blue' },
     { name: 'Generated Today', value: data?.stats.linksToday, icon: Activity, color: 'emerald' },
     { name: 'Active Sessions', value: data?.stats.activeLinks, icon: Zap, color: 'amber' },
-    { name: 'Bot Engine', value: 'OFFLINE', icon: BarChart3, color: 'zinc' },
+    { 
+      name: 'Bot Engine', 
+      value: data?.stats.botStatus || 'OFFLINE', 
+      icon: BarChart3, 
+      color: data?.stats.botStatus === 'ONLINE' ? 'emerald' : 'zinc' 
+    },
   ]
 
   return (

@@ -153,3 +153,18 @@ async def check_rate_limit(user_id: int, limit: int = 10) -> bool:
     except Exception as exc:
         logger.error("Rate limit check failed for user_id=%s: %s", user_id, exc)
         return True # Fail open so users aren't blocked on DB issues
+async def update_bot_heartbeat() -> None:
+    """
+    Update the bot_heartbeat entry in the settings table.
+    Used by Lighthouse to determine if the bot is online.
+    """
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        # We use an upsert on the settings table where key='bot_heartbeat'
+        _client.table("settings").upsert({
+            "key": "bot_heartbeat",
+            "value": now,
+            "updated_at": now
+        }, on_conflict="key").execute()
+    except Exception as exc:
+        logger.error("Bot heartbeat update failed: %s", exc)

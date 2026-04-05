@@ -65,11 +65,28 @@ export async function getDashboardStats() {
       .order('requested_at', { ascending: false })
       .limit(10)
 
+    // 7. Bot Status (Heartbeat check)
+    let botStatus = 'OFFLINE'
+    const { data: heartbeatData } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'bot_heartbeat')
+      .maybeSingle()
+
+    if (heartbeatData?.value) {
+      const lastHeartbeat = new Date(heartbeatData.value)
+      const diff = Date.now() - lastHeartbeat.getTime()
+      if (diff < 120000) { // 2 minutes threshold
+        botStatus = 'ONLINE'
+      }
+    }
+
     return {
       stats: {
         totalLinks: totalLinks || 0,
         linksToday: linksToday || 0,
         activeLinks: activeLinks || 0,
+        botStatus,
         botRequests: 0 // Placeholder, updated by getBotAnalytics
       },
       chartData,
