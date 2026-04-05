@@ -153,6 +153,15 @@ async def check_rate_limit(user_id: int, limit: int = 10) -> bool:
     except Exception as exc:
         logger.error("Rate limit check failed for user_id=%s: %s", user_id, exc)
         return True # Fail open so users aren't blocked on DB issues
+async def get_media_by_id(link_id: str) -> dict | None:
+    """Helper for the bot to get full metadata by link_id."""
+    try:
+        result = _client.table("media").select("*").eq("id", link_id).execute()
+        return result.data[0] if result.data else None
+    except Exception:
+        return None
+
+
 async def update_bot_heartbeat() -> None:
     """
     Update the bot_heartbeat entry in the settings table.

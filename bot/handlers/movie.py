@@ -60,11 +60,8 @@ async def cmd_movie(message: Message) -> None:
             f"⏳ Link expires in 6 hours"
         )
 
-        # Build subtitle button
-        subject_id = result.get("subject_id", "0")
-        imdb_id = (result.get("imdb_id") or "0").replace("tt", "")
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📥 Download Subtitles", callback_data=f"sb:0:{subject_id}:{imdb_id}:0:0")]
+            [InlineKeyboardButton(text="📥 Download Subtitles", callback_data=f"sb:{link_id}")]
         ])
 
         await status_msg.edit_text(reply, parse_mode="Markdown", reply_markup=kb)

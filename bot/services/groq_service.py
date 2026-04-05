@@ -130,8 +130,7 @@ Always return exactly this JSON object. Never wrap it in markdown. Do not add an
   "reference_title": "string | null",
   "year_min": null,
   "year_max": null,
-  "needs_clarification": false,
-  "options": [],
+  "is_subtitle_request": false,
   "chat_response": "string | null",
   "raw_intent": "string"
 }"""
@@ -236,7 +235,8 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
             "genre": parsed.get("genre"),
             "mood": parsed.get("mood"),
             "source_hint": parsed.get("source_hint"),
-            "reference_title": parsed.get("reference_title")
+            "reference_title": parsed.get("reference_title"),
+            "is_subtitle_request": parsed.get("is_subtitle_request", False)
         }
 
     except Exception as exc:

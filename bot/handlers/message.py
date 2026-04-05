@@ -469,6 +469,10 @@ async def handle_message(message: Message) -> None:
         case "help":
             await message.answer(HELP_TEXT, parse_mode="Markdown")
 
+        case _ if intent.get("is_subtitle_request"):
+            from handlers.subtitle import cmd_sub_search
+            await cmd_sub_search(message, intent.get("title") or intent.get("reference_title"))
+
         case "chat" | _:
             chat_response = intent.get("chat_response") or "I'm here to help you download movies and series! Just tell me what you want to watch."
             add_message(user_id, "assistant", chat_response)
