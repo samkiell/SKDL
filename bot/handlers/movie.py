@@ -51,6 +51,8 @@ async def cmd_movie(message: Message) -> None:
             requested_by=message.from_user.id,
             subject_id=result["subject_id"],
             imdb_id=result.get("imdb_id"),
+            poster_url=result.get("poster_url"),
+            description=result.get("description"),
         )
 
         reply = (
@@ -71,7 +73,7 @@ async def cmd_movie(message: Message) -> None:
             from aiogram.types import URLInputFile
             file_name = f"{result['title']} ({result['year']}) {result['quality']} - SKDL(samkiel.online).mp4"
             await message.answer_document(
-                URLInputFile(result["cdn_url"], filename=file_name),
+                URLInputFile(str(result["cdn_url"]), filename=file_name),
                 caption=f"🎬 {result['title']}"
             )
         except Exception as e:

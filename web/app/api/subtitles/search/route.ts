@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
           imdb_id: '',
           isBestMatch: true,
           subtitleUrl: englishSub.url,
+          poster_url: movieBoxItem.cover.url,
         });
       }
     }

@@ -14,7 +14,7 @@ export default async function DiscoverPage(props: { searchParams: SearchParams }
   
   let query = supabase
     .from('media')
-    .select('id, title, type, quality, created_at')
+    .select('id, title, type, quality, created_at, poster_url')
     .order('created_at', { ascending: false })
     .limit(24)
 

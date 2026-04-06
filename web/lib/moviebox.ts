@@ -16,6 +16,10 @@ export interface MovieBoxSearchResult {
   cover: {
     url: string
   }
+  description?: string
+  releaseDate?: {
+    year: number
+  }
 }
 
 const API_HOST = "h5-api.aoneroom.com"
@@ -88,6 +92,18 @@ export async function getMovieBoxDetails(
     console.error('MovieBox Detail API Error:', err)
     return { downloads: [], captions: [] }
   }
+}
+
+export async function getMediaInfo(
+  title: string,
+  type: 'movie' | 'series'
+): Promise<MovieBoxSearchResult & { description?: string; year?: number } | null> {
+  const searchResult = await searchMovieBox(title, type)
+  if (!searchResult) return null
+
+  // We could fetch more details here if needed, but search result usually has cover
+  // and we can infer year from releaseDate if we update searchMovieBox to return it.
+  return searchResult
 }
 
 export async function getFreshCdnUrl(

@@ -12,6 +12,7 @@ interface SubtitleResult {
   imdb_id: string;
   isBestMatch?: boolean;
   subtitleUrl?: string;
+  poster_url?: string;
 }
 
 interface SubtitleCardProps {
@@ -21,7 +22,18 @@ interface SubtitleCardProps {
 
 export default function SubtitleCard({ result, onDownloadClick }: SubtitleCardProps) {
   return (
-    <div className={`bg-zinc-950 border ${result.isBestMatch ? 'border-zinc-400 shadow-[0_0_20px_rgba(255,255,255,0.05)]' : 'border-white/5'} rounded-xl p-5 hover:border-white/20 transition-all group relative`}>
+    <div className={`bg-zinc-950 border ${result.isBestMatch ? 'border-zinc-400 shadow-[0_0_20px_rgba(255,255,255,0.05)]' : 'border-white/5'} rounded-xl overflow-hidden hover:border-white/20 transition-all group relative flex flex-col`}>
+      {result.poster_url && (
+          <div className="relative aspect-[16/9] w-full overflow-hidden">
+              <img 
+                src={result.poster_url} 
+                alt={result.title}
+                className="object-cover w-full h-full opacity-40 group-hover:opacity-100 transition-opacity duration-500 scale-105 group-hover:scale-100"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent"></div>
+          </div>
+      )}
+      <div className="p-5 flex-1 flex flex-col">
       {result.isBestMatch && (
         <div className="absolute -top-3 left-6 flex items-center gap-1.5 px-3 py-1 bg-zinc-400 text-black text-[10px] font-black font-mono rounded-full uppercase tracking-widest shadow-xl">
           <span className="text-[12px]">✦</span> Best Match
@@ -70,6 +82,7 @@ export default function SubtitleCard({ result, onDownloadClick }: SubtitleCardPr
           >
             DOWNLOAD .SRT
           </button>
+        </div>
         </div>
       </div>
     </div>

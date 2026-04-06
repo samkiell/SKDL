@@ -27,6 +27,8 @@ async def save_media(
     requested_by: int | None = None,
     subject_id: str | None = None,
     imdb_id: str | None = None,
+    poster_url: str | None = None,
+    description: str | None = None,
 ) -> dict | None:
     """
     Insert a new row into the media table.
@@ -46,6 +48,8 @@ async def save_media(
         "expires_at": expires_at.isoformat(),
         "subject_id": subject_id,
         "imdb_id": imdb_id,
+        "poster_url": poster_url,
+        "description": description,
     }
 
     try:

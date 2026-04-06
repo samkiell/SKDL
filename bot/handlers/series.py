@@ -60,6 +60,8 @@ async def process_series_delivery(message: Message, title: str, season: int, epi
             requested_by=message.from_user.id,
             subject_id=result["subject_id"],
             imdb_id=result.get("imdb_id"),
+            poster_url=result.get("poster_url"),
+            description=result.get("description"),
         )
 
         reply = (
@@ -81,7 +83,7 @@ async def process_series_delivery(message: Message, title: str, season: int, epi
             from aiogram.types import URLInputFile
             file_name = f"{result['title']} S{result['season']}E{result['episode']} {result['quality']} - SKDL(samkiel.online).mp4"
             await message.answer_document(
-                URLInputFile(result["cdn_url"], filename=file_name),
+                URLInputFile(str(result["cdn_url"]), filename=file_name),
                 caption=f"📺 {result['title']} S{result['season']}E{result['episode']}"
             )
         except Exception as e:

@@ -102,6 +102,9 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
         link_id = generate_id()
         link_url = build_url(link_id)
 
+        # Fetch metadata for DB consistency
+        info = await get_media_info(result["title"], is_series=False)
+
         await save_media(
             link_id=link_id,
             title=result["title"],
@@ -110,6 +113,8 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
             quality=result["quality"],
             requested_by=user_id,
             subject_id=result["subject_id"],
+            poster_url=info.get("poster_url"),
+            description=info.get("description"),
         )
 
         elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -244,6 +249,9 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
         link_id = generate_id()
         link_url = build_url(link_id)
 
+        # Fetch metadata for DB consistency
+        info = await get_media_info(result["title"], is_series=True)
+
         await save_media(
             link_id=link_id,
             title=result["title"],
@@ -254,6 +262,8 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
             episode=result["episode"],
             requested_by=user_id,
             subject_id=result["subject_id"],
+            poster_url=info.get("poster_url"),
+            description=info.get("description"),
         )
 
         elapsed_ms = int((time.monotonic() - start_time) * 1000)
