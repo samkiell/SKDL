@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: Request) {
   const cookieStore = await cookies()
   const auth = cookieStore.get('lighthouse_auth')
   
@@ -13,8 +13,12 @@ export async function GET() {
   }
 
   try {
+    const { searchParams } = new URL(req.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const search = searchParams.get('search') || ''
+    
     const dashboardStats = await getDashboardStats()
-    const botStats = await getBotAnalytics()
+    const botStats = await getBotAnalytics(page, search)
     
     return NextResponse.json({
       ...dashboardStats,

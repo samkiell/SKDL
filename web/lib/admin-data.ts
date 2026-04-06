@@ -104,7 +104,7 @@ export async function getDashboardStats() {
   }
 }
 
-export async function getBotAnalytics() {
+export async function getBotAnalytics(page = 1, search = '') {
   const today = startOfToday().toISOString()
   const sevenDaysAgo = subDays(new Date(), 7).toISOString()
 
@@ -180,12 +180,21 @@ export async function getBotAnalytics() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
 
-    // 5. Recent 20
-    const { data: recent } = await supabase
+    // 5. Recent (Paginated + Search)
+    const pageSize = 20
+    const offset = (page - 1) * pageSize
+    
+    let queryBuilder = supabase
       .from('bot_logs')
       .select('*')
+      
+    if (search) {
+      queryBuilder = queryBuilder.or(`username.ilike.%${search}%,display_name.ilike.%${search}%,result_title.ilike.%${search}%,query.ilike.%${search}%`)
+    }
+
+    const { data: recent } = await queryBuilder
       .order('created_at', { ascending: false })
-      .limit(20)
+      .range(offset, offset + pageSize - 1)
 
     return {
       overview: {

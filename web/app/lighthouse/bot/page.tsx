@@ -13,7 +13,10 @@ import {
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  RefreshCcw
+  RefreshCcw,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -37,14 +40,26 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function BotActivityPage() {
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState(new Date())
 
-  const fetchData = async () => {
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(1) // Reset to first page on search
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const fetchData = async (currentPage = page, currentSearch = debouncedSearch) => {
     try {
       setLoading(true)
-      const res = await fetch('/api/lighthouse/stats')
+      const res = await fetch(`/api/lighthouse/stats?page=${currentPage}&search=${encodeURIComponent(currentSearch)}`)
       if (res.status === 401) {
         window.location.href = '/lighthouse/login'
         return
@@ -60,10 +75,10 @@ export default function BotActivityPage() {
   }
 
   useEffect(() => {
-    fetchData()
-    const interval = setInterval(fetchData, 30000)
+    fetchData(page, debouncedSearch)
+    const interval = setInterval(() => fetchData(page, debouncedSearch), 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [page, debouncedSearch])
 
   if (loading && !data) {
     return (
@@ -274,13 +289,34 @@ export default function BotActivityPage() {
 
       {/* Live Request Feed */}
       <div className="p-10 rounded-xl bg-white/[0.02] border border-white/10 space-y-10">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <h2 className="text-[11px] font-bold uppercase tracking-[0.3em] text-zinc-500">Live Signal Monitor</h2>
             <p className="text-[9px] text-zinc-700 font-mono uppercase tracking-widest">Last 20 interpreted bot instructions</p>
           </div>
-          <div className="px-4 py-2 bg-zinc-950 border border-white/10 rounded-xl text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
-            {data?.recent.length || 0} IN BUFFER
+          
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 group-focus-within:text-white transition-colors" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="SEARCH SIGNALS..."
+                className="bg-zinc-950 border border-white/5 rounded-xl pl-10 pr-10 py-2.5 text-[10px] font-mono font-bold text-white placeholder:text-zinc-800 focus:outline-none focus:border-white/20 transition-all w-full md:w-[300px] uppercase tracking-widest"
+              />
+              {search && (
+                <button 
+                  onClick={() => setSearch('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="hidden sm:flex px-4 py-2.5 bg-zinc-950 border border-white/10 rounded-xl text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
+              {data?.recent.length || 0} IN BUFFER
+            </div>
           </div>
         </div>
 
@@ -347,6 +383,34 @@ export default function BotActivityPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="pt-8 flex items-center justify-between border-t border-white/5">
+          <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest font-bold">
+            Signal Page {page}
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                setPage(p => Math.max(1, p - 1))
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              disabled={page === 1 || loading}
+              className="px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl text-[10px] font-mono font-bold text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-all flex items-center gap-2 uppercase tracking-widest"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Previous
+            </button>
+            <button
+              onClick={() => {
+                setPage(p => p + 1)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              disabled={loading || data?.recent.length < 20}
+              className="px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl text-[10px] font-mono font-bold text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-all flex items-center gap-2 uppercase tracking-widest"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
