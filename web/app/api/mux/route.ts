@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { spawn } from 'child_process'
+import { spawn, execSync } from 'child_process'
 import { Readable } from 'stream'
 import fs from 'fs'
 import path from 'path'
@@ -15,46 +15,50 @@ let ffmpegPath = ffmpegInstaller.path
 console.info('[api/mux] module init... PATH:', process.env.PATH)
 console.info('[api/mux] architecture:', os.arch(), 'platform:', os.platform())
 
-try {
-    const { execSync } = require('child_process')
-    // Check if 'ffmpeg' is directly available and working
+// Optimize FFmpeg detection for server environments (Turbopack NFT trace safe)
+if (typeof window === 'undefined') {
     try {
-        execSync('ffmpeg -version', { stdio: 'ignore' })
-        ffmpegPath = 'ffmpeg'
-        console.info('[api/mux] system ffmpeg is available and working via PATH')
-    } catch (err) {
-        // Fallback to searching with common absolute paths
-        const commonPaths = ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/nix/var/nix/profiles/default/bin/ffmpeg']
-        let found = false
-        for (const p of commonPaths) {
-            if (fs.existsSync(p)) {
-                ffmpegPath = p
-                found = true
-                console.info('[api/mux] found system ffmpeg at common path:', p)
-                break
-            }
-        }
-        
-        if (!found) {
-            // Last resort: 'which'
-            try {
-                const systemFfmpeg = execSync('which ffmpeg').toString().trim()
-                if (systemFfmpeg) {
-                    ffmpegPath = systemFfmpeg
-                    console.info('[api/mux] found system ffmpeg binary via which:', ffmpegPath)
-                } else {
-                    throw new Error('not_found')
+        // Check if 'ffmpeg' is directly available and working
+        try {
+            execSync('ffmpeg -version', { stdio: 'ignore' })
+            ffmpegPath = 'ffmpeg'
+            console.info('[api/mux] system ffmpeg is available and working via PATH')
+        } catch (err) {
+            // Fallback to searching with common absolute paths
+            const commonPaths = ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/nix/var/nix/profiles/default/bin/ffmpeg']
+            let found = false
+            for (const p of commonPaths) {
+                if (fs.existsSync(p)) {
+                    ffmpegPath = p
+                    found = true
+                    console.info('[api/mux] found system ffmpeg at common path:', p)
+                    break
                 }
-            } catch (e) {
-                throw new Error('not_found_on_system')
+            }
+            
+            if (!found) {
+                // Last resort: 'which'
+                try {
+                    const systemFfmpeg = execSync('which ffmpeg').toString().trim()
+                    if (systemFfmpeg) {
+                        ffmpegPath = systemFfmpeg
+                        console.info('[api/mux] found system ffmpeg binary via which:', ffmpegPath)
+                    } else {
+                        throw new Error('not_found')
+                    }
+                } catch (e) {
+                    throw new Error('not_found_on_system')
+                }
             }
         }
-    }
-} catch (e) {
-    console.info('[api/mux] fallback to installer binary:', ffmpegPath)
-    // Ensure executable bit for installer binary if on linux
-    if (os.platform() === 'linux') {
-        try { fs.chmodSync(ffmpegPath, 0o755) } catch(e) {}
+    } catch (e) {
+        console.info('[api/mux] fallback to installer binary:', ffmpegPath)
+        // Ensure executable bit for installer binary if on linux
+        if (os.platform() === 'linux') {
+            try { 
+                fs.chmodSync(ffmpegPath, 0o755) 
+            } catch(e) {}
+        }
     }
 }
 
