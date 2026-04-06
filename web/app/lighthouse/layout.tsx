@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   Zap,
-  Settings
+  Settings,
+  MessageSquare,
 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import { useState } from 'react'
@@ -35,6 +36,7 @@ export default function LighthouseLayout({
     { name: 'Dashboard', href: '/lighthouse', icon: LayoutDashboard },
     { name: 'Links Management', href: '/lighthouse/links', icon: Link2 },
     { name: 'Bot Engine', href: '/lighthouse/bot', icon: BarChart3 },
+    { name: 'Feedback', href: '/lighthouse/feedback', icon: MessageSquare },
     { name: 'Config', href: '/lighthouse/settings', icon: Settings },
   ]
 
