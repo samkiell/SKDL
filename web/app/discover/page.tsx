@@ -9,6 +9,8 @@ type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
 export default async function DiscoverPage(props: { searchParams: SearchParams }) {
   const searchParams = await props.searchParams
   const q = typeof searchParams.q === 'string' ? searchParams.q : ''
+  const page = typeof searchParams.page === 'string' ? parseInt(searchParams.page) : 1
+  const PAGE_SIZE = 24
 
   const supabase = getSupabaseClient()
   
@@ -16,13 +18,15 @@ export default async function DiscoverPage(props: { searchParams: SearchParams }
     .from('media')
     .select('id, title, type, quality, created_at, poster_url')
     .order('created_at', { ascending: false })
-    .limit(24)
+    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE) // Fetch PAGE_SIZE + 1 to detect next page
 
   if (q) {
     query = query.ilike('title', `%${q}%`)
   }
 
   const { data, error } = await query
+  const hasNextPage = (data?.length || 0) > PAGE_SIZE
+  const displayData = data?.slice(0, PAGE_SIZE) || []
 
   if (error) {
     console.error('Failed to fetch discover list:', error)
@@ -45,7 +49,11 @@ export default async function DiscoverPage(props: { searchParams: SearchParams }
             </div>
         </div>
 
-        <DiscoverGrid initialData={data || []} />
+        <DiscoverGrid 
+          initialData={displayData} 
+          currentPage={page}
+          hasNextPage={hasNextPage}
+        />
         
         <div className="pt-12 border-t border-white/5">
             <AdBanner adKey="discover-bottom" width={728} height={90} />

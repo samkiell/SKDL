@@ -13,7 +13,15 @@ interface MediaCard {
   quality?: string
 }
 
-export default function DiscoverGrid({ initialData }: { initialData: MediaCard[] }) {
+export default function DiscoverGrid({ 
+  initialData, 
+  currentPage, 
+  hasNextPage 
+}: { 
+  initialData: MediaCard[],
+  currentPage: number,
+  hasNextPage: boolean
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [filter, setFilter] = useState<'ALL' | 'MOVIES' | 'SERIES'>('ALL')
@@ -116,6 +124,39 @@ export default function DiscoverGrid({ initialData }: { initialData: MediaCard[]
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {(currentPage > 1 || hasNextPage) && (
+        <div className="flex justify-center items-center gap-4 pt-12">
+            {currentPage > 1 && (
+                <button
+                    onClick={() => {
+                        const params = new URLSearchParams(searchParams.toString())
+                        params.set('page', (currentPage - 1).toString())
+                        router.push(`/discover?${params.toString()}`)
+                    }}
+                    className="flex items-center gap-2 px-6 py-2 rounded-full border border-white/10 text-sm font-mono text-zinc-400 hover:text-white hover:border-white/20 transition-all"
+                >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    PREV
+                </button>
+            )}
+            
+            {hasNextPage && (
+                <button
+                    onClick={() => {
+                        const params = new URLSearchParams(searchParams.toString())
+                        params.set('page', (currentPage + 1).toString())
+                        router.push(`/discover?${params.toString()}`)
+                    }}
+                    className="flex items-center gap-2 px-8 py-2 rounded-full bg-white text-black text-sm font-bold uppercase tracking-[0.2em] hover:bg-[#e8ff47] transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[#e8ff47]/20"
+                >
+                    NEXT
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+            )}
         </div>
       )}
     </div>
