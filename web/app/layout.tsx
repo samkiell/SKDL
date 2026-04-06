@@ -165,13 +165,12 @@ export default function RootLayout({
       <body
         className={`antialiased bg-black text-white ${inter.variable} ${spaceGrotesk.variable} ${jbMono.variable} flex flex-col min-h-screen`}
       >
-        <PageTracker />
         {/* JSON-LD injected into <head> at the edge — zero client JS cost */}
         <Script
           id="json-ld"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-          strategy="beforeInteractive"
+          strategy="afterInteractive"
         />
 
         <GlobalNotice />
@@ -238,6 +237,7 @@ export default function RootLayout({
             />
           )}
         </ConditionalFooter>
+        <PageTracker />
       </body>
     </html>
   )

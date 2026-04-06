@@ -16,7 +16,7 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
   const type = searchParams.get('type') || 'mp4'
 
   const adsOn = process.env.NEXT_PUBLIC_ADS === 'ON'
-  const [counter, setCounter] = useState(adsOn ? 10 : 0)
+  const [counter, setCounter] = useState(10)
   const [loading, setLoading] = useState(false)
   const [isMuxing, setIsMuxing] = useState(false)
   const [statusIndex, setStatusIndex] = useState(0)

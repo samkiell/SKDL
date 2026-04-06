@@ -121,13 +121,6 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
                     {metaLine}
                   </p>
                 </div>
-                <button
-                  onClick={handleShare}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-mono text-[10px] uppercase tracking-widest font-bold group"
-                >
-                  <Share2 className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
-                  <span>Share Link</span>
-                </button>
               </div>
           </div>
         </div>
@@ -178,7 +171,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
                   </div>
               )}
 
-              <div className="pt-2">
+              <div className="pt-2 flex flex-col items-center gap-6">
                   <a
                       href="https://t.me/SK_DLBOT"
                       target="_blank"
@@ -187,6 +180,14 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
                   >
                       Request Another on Telegram →
                   </a>
+
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center gap-2 px-8 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-mono text-[10px] uppercase tracking-[0.4em] font-black group mt-4 shadow-2xl"
+                  >
+                    <Share2 className="w-4 h-4 text-[#e8ff47]/40 group-hover:text-[#e8ff47] transition-colors" />
+                    <span>Share With Friends</span>
+                  </button>
               </div>
           </div>
         </div>
