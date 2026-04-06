@@ -21,7 +21,7 @@
 body {
   color: #ffffff;
   background: #000000;
-  font-family: var(--font-inter), sans-serif;
+  font-family: var(--font-space), sans-serif;
 }
 
 .font-space {
