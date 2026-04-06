@@ -137,9 +137,9 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
         })
         model_name = "llama-3.2-11b-vision-preview" 
     else:
-        # Standard text-only fallback to 70B
+        # Standard text-only fallback to 8B (higher quota)
         messages.append({"role": "user", "content": user_message})
-        model_name = "llama-3.3-70b-versatile"
+        model_name = "llama-3.1-8b-instant"
 
     try:
         response = _client.chat.completions.create(
