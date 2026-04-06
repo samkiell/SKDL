@@ -435,6 +435,12 @@ async def handle_message(message: Message) -> None:
     history = get_history(user_id)
     intent = await parse_intent(history, user_text, image_base64=image_base64)
 
+    # 1. Always deliver the AI's personality response if they gave one
+    chat_reply = intent.get("chat_response")
+    if chat_reply:
+        await message.answer(chat_reply)
+        add_message(user_id, "assistant", chat_reply)
+
     match intent["intent"]:
         case "download_movie":
             username = (message.from_user.username or "").lower()
@@ -452,7 +458,7 @@ async def handle_message(message: Message) -> None:
 
         case "clarify":
             clarify_msg = intent.get("clarify_message") or "Could you give me more details?"
-            add_message(user_id, "assistant", clarify_msg)
+            add_message(user_id, "assistant", clarify_msg) # Log wait message too
             await message.answer(f"🤔 {clarify_msg}")
             
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -473,10 +479,15 @@ async def handle_message(message: Message) -> None:
             from handlers.subtitle import cmd_sub_search
             await cmd_sub_search(message, intent.get("title") or intent.get("reference_title"))
 
-        case "chat" | _:
-            chat_response = intent.get("chat_response") or "I'm here to help you download movies and series! Just tell me what you want to watch."
-            add_message(user_id, "assistant", chat_response)
-            await message.answer(chat_response)
+        case "chat":
+            # If no chat_reply was produced somehow but intent was chat, send fallback
+            if not chat_reply:
+                await message.answer("I'm here to help you download movies and series! Just tell me what you want to watch.")
+
+        case _:
+            # Log any weird missed states
+            if not chat_reply:
+                await message.answer("Wait, what are you looking for exactly?")
 
 @router.callback_query(F.data.startswith("q:"))
 async def on_quality_selected(query: CallbackQuery) -> None:

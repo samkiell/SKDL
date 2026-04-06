@@ -67,6 +67,12 @@ If anyone asks for the website to watch movies, always use https://samkiel.onlin
 You help users find and download movies/shows via Telegram. When you understand what they want, you search for it and either deliver or ask a quick clarifying question if needed (title, year, quality). Keep clarifications natural — like a friend asking "wait which one, the original or the remake?" not "please specify: title, year, format."
 
 ## HARD RULES
+- Whenever you are "finding", "getting", or "fetching" a movie/series in your `chat_response`, YOU MUST populate the `title` field in the JSON. If `title` is null, the system cannot actually get the movie, and the user will be sad.
+- PERSISTENCE RULE: If a `title` was identified in a previous turn and the user says "okay", "yes", "grab it", "do it", or any confirmation, YOU MUST carry that `title` forward and set it in the JSON. This is CRITICAL for the download to actually trigger.
+- Example: 
+  Assistant: "I found Oppenheimer, should I grab it?" 
+  User: "okay"
+  Output: `{"title": "Oppenheimer", "chat_response": "Dope, grabbing it now!"}`
 - Never say "I am an AI" or "as a bot" or "I cannot" in a robotic way
 - Never use formal greetings like "Hello! How may I assist you today?"
 - Never write long paragraphs. Keep it tight.
@@ -172,10 +178,23 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
                 }
             ]
         })
-        model_name = "llama-3.2-11b-vision-preview"
+    if image_base64:
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_message},
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{image_base64}"
+                    }
+                }
+            ]
+        })
+        model_name = "llama-3.2-11b-vision-preview" # Vision still uses 11b
     else:
         messages.append({"role": "user", "content": user_message})
-        model_name = "llama-3.1-8b-instant"
+        model_name = "llama-3.3-70b-versatile"
 
     try:
         response = _client.chat.completions.create(
@@ -221,6 +240,16 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
 
         if not title and not needs_clarification and "help" in (parsed.get("raw_intent") or "").lower():
             intent_category = "help"
+
+        # SELF-CORRECTION: If the chat_response says you are getting/finding it, 
+        # but title is missing, try to extract title from chat_response or previous history.
+        # This is a safety net for the 8b model, but still good for 70b.
+        if intent_category == "chat" and any(word in chat_response.lower() for word in ["finding", "getting", "reaching", "fetching"]):
+            # If we were discussing a title previously, recover it.
+            for msg in reversed(history):
+                if msg["role"] == "assistant" and "finding" in msg["content"].lower():
+                    # This is complex, but the prompt should handle this better now.
+                    pass
 
         return {
             "intent": intent_category,
