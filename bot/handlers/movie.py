@@ -69,7 +69,7 @@ async def cmd_movie(message: Message) -> None:
         # Attempt direct file delivery
         try:
             from aiogram.types import URLInputFile
-            file_name = f"{result['title']} ({result['year']}) {result['quality']}.mp4"
+            file_name = f"{result['title']} ({result['year']}) {result['quality']} - SKDL.mp4"
             await message.answer_document(
                 URLInputFile(result["cdn_url"], filename=file_name),
                 caption=f"🎬 {result['title']}"
