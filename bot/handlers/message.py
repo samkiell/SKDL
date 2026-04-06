@@ -137,7 +137,7 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
         try:
             file_name = f"{result['title']} ({result['year']}) {result['quality']} - SKDL(samkiel.online).mp4"
             await message.answer_document(
-                URLInputFile(result["cdn_url"], filename=file_name),
+                URLInputFile(str(result["cdn_url"]), filename=file_name),
                 caption=f"🎬 {result['title']}"
             )
         except Exception as e:
@@ -217,7 +217,7 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
         
         if info.get("poster_url"):
             await message.answer_photo(
-                URLInputFile(info["poster_url"]),
+                URLInputFile(str(info["poster_url"])),
                 caption=caption,
                 reply_markup=builder.as_markup(),
                 parse_mode="Markdown"
@@ -281,7 +281,7 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
         try:
             file_name = f"{result['title']} S{result['season']}E{result['episode']} {result['quality']} - SKDL(samkiel.online).mp4"
             await message.answer_document(
-                URLInputFile(result["cdn_url"], filename=file_name),
+                URLInputFile(str(result["cdn_url"]), filename=file_name),
                 caption=f"📺 {result['title']} S{result['season']}E{result['episode']}"
             )
         except Exception as e:

@@ -316,7 +316,7 @@ async def get_media_info(title: str, is_series: bool) -> dict:
         return {
             "title": target.title,
             "year": target.releaseDate.year,
-            "poster_url": target.cover.url if hasattr(target, "cover") else None,
+            "poster_url": str(target.cover.url) if hasattr(target, "cover") else None,
             "description": getattr(target, "description", ""),
             "genre": getattr(target, "tags", ""), # MovieBox often calls genres tags
             "subject_id": target.subjectId
