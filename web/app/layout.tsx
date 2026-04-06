@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   // Core
   metadataBase: new URL('https://samkiel.online'),
   title: {
-    default: 'SKDL — AI-Powered Movie & TV Show Downloads',
+    default: 'SKDL — Netflix and Chill with SKDL',
     template: '%s | SKDL',
   },
   description:
