@@ -9,9 +9,7 @@ export function getRedisClient(): Redis {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN
 
   if (!url || !token) {
-    if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PHASE) {
-      throw new Error('Upstash Redis environment variables are missing.')
-    }
+    console.warn('[Redis] Warning: UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is not defined in environment.')
     return new Redis({
       url: url || 'https://placeholder.upstash.io',
       token: token || 'placeholder',
