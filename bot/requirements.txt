@@ -1,6 +1,6 @@
 aiogram>=3.0,<4.0
 groq
-supabase
+redis
 python-dotenv
 nanoid
 moviebox-api
