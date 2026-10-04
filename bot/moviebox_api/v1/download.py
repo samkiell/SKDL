@@ -90,10 +90,21 @@ def resolve_media_file_to_be_downloaded(
     return target_metadata
 
 
+def _resolve_download_url() -> str:
+    host = os.getenv("MOVIEBOX_API_HOST_V2", "h5-api.aoneroom.com")
+    if not host or host == "h5.aoneroom.com":
+        host = "h5-api.aoneroom.com"
+    return f"https://{host}/wefeed-h5api-bff/subject/download"
+
+
 class BaseDownloadableFilesDetail(BaseContentProviderAndHelper):
     """Base class for fetching and modelling downloadable files detail"""
 
-    _url = f"https://{os.getenv('MOVIEBOX_API_HOST_V2', 'h5-api.aoneroom.com')}/wefeed-h5api-bff/subject/download"
+    _url = _resolve_download_url()
+
+    @property
+    def url(self) -> str:
+        return _resolve_download_url()
 
     def __init__(
         self, session: Session, item: SearchResultsItem | ItemJsonDetailsModel
@@ -154,7 +165,7 @@ class BaseDownloadableFilesDetail(BaseContentProviderAndHelper):
         }
 
         content = await self.session.get_with_cookies_from_api(
-            url=self._url,
+            url=_resolve_download_url(),
             params=self._create_request_params(season, episode),
             headers=request_header,
         )
