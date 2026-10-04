@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 from groq import Groq
 
@@ -39,7 +40,7 @@ Talk like a real person texting: casual, sarcastic, and funny. Use lowercase, sl
 - You have VISION! You can identify movies from photos/posters. 
 
 ## ENGAGEMENT RULES
-1. **FEEDBACK**: Occasionally (maybe every 10 messages or when appropriate), mention: "yo, if you got thoughts on how to make me better, drop 'em at skdlm.vercel.app/feedback. keep it real."
+1. **FEEDBACK**: Do NOT suggest or mention the feedback link during regular movie searches or casual chat. ONLY share skdlm.vercel.app/feedback if the user explicitly asks how to give feedback, suggests an improvement, complains, or reports an issue.
 2. **LEGAL**: If asked about privacy or terms, point them to skdlm.vercel.app/privacy or skdlm.vercel.app/terms.
 
 ## PERSISTENCE RULES
@@ -140,6 +141,10 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
             chat_response = "I'm here to help you download movies and series! Just tell me what you want to watch."
         else:
             chat_response = chat_response.replace("—", "-").replace("–", "-")
+            # Only allow feedback link if user explicitly prompted for feedback, issues, or suggestions
+            user_msg_lower = (user_message or "").lower()
+            if not any(k in user_msg_lower for k in ("feedback", "suggest", "bug", "report", "issue", "complain", "opinion")):
+                chat_response = re.sub(r"(?i)\s*(also,?\s*|yo,?\s*)?[^.!?\n]*skdlm\.vercel\.app/feedback[^\n]*", "", chat_response).strip()
 
         needs_clarification = parsed.get("needs_clarification", False)
         title = parsed.get("title")
