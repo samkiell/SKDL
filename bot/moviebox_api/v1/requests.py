@@ -18,6 +18,8 @@ from moviebox_api.v1.helpers import (
 from moviebox_api.v1.models import MovieboxAppInfo, UserInfo
 
 request_cookies = {}
+_cached_user_info: UserInfo | None = None
+_cached_app_info: MovieboxAppInfo | None = None
 
 __all__ = ["Session"]
 
@@ -179,10 +181,28 @@ class Session:
         Returns:
             bool: `account` cookie availability status.
         """
+        global _cached_user_info, _cached_app_info
+
+        if self.user_info is None and _cached_user_info is not None:
+            self.user_info = _cached_user_info
+            self._client.headers.update({"Authorization": f"Bearer {_cached_user_info.token}"})
+
+        if self.moviebox_app_info is None and _cached_app_info is not None:
+            self.moviebox_app_info = _cached_app_info
+
         if not self.__moviebox_app_info_fetched:
-            # First run probably
-            await self._fetch_user_info()
-            await self._fetch_app_info()
+            if not self.user_info:
+                try:
+                    await self._fetch_user_info()
+                except Exception:
+                    pass
+
+            if not self.moviebox_app_info:
+                try:
+                    await self._fetch_app_info()
+                except Exception:
+                    pass
+
             self.__moviebox_app_info_fetched = True
 
         return (
@@ -190,24 +210,28 @@ class Session:
             and self._client.cookies.get("token") is not None
         )
 
-    async def _fetch_app_info(self) -> MovieboxAppInfo:
+    async def _fetch_app_info(self) -> MovieboxAppInfo | None:
         """Fetches the moviebox app info but the main goal is to get the essential
           cookies required for requests such as download to go through.
 
         Returns:
-            MovieboxAppInfo: Details about latest moviebox app
+            MovieboxAppInfo | None: Details about latest moviebox app
         """
-        response = await self._client.get(url=self._moviebox_app_info_url)
-        response.raise_for_status()
+        global _cached_app_info
+        try:
+            response = await self._client.get(url=self._moviebox_app_info_url)
+            response.raise_for_status()
 
-        moviebox_app_info = process_api_response(response)
+            moviebox_app_info = process_api_response(response)
 
-        if isinstance(moviebox_app_info, list):
-            moviebox_app_info = moviebox_app_info[0]
+            if isinstance(moviebox_app_info, list):
+                moviebox_app_info = moviebox_app_info[0]
 
-        self.moviebox_app_info = MovieboxAppInfo(**moviebox_app_info)
-
-        return self.moviebox_app_info
+            self.moviebox_app_info = MovieboxAppInfo(**moviebox_app_info)
+            _cached_app_info = self.moviebox_app_info
+            return self.moviebox_app_info
+        except Exception:
+            return None
 
     async def _fetch_user_info(self) -> UserInfo:
         """Fetches the user info but the main goal is to get the essential
@@ -216,6 +240,7 @@ class Session:
         Returns:
             UserInfo: Details about latest moviebox app
         """
+        global _cached_user_info
         response = await self._client.post(
             url=self._user_info_endpoint, json={"keyword": "avatar", "perPage": 0}
         )
@@ -229,6 +254,7 @@ class Session:
             )
 
         self.user_info = UserInfo(**json.loads(user_info))
+        _cached_user_info = self.user_info
 
         new_auth = {"Authorization": f"Bearer {self.user_info.token}"}
 
