@@ -114,6 +114,7 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
             subject_id=result["subject_id"],
             poster_url=info.get("poster_url"),
             description=info.get("description"),
+            size=result.get("size"),
         )
 
         elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -263,6 +264,7 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
             subject_id=result["subject_id"],
             poster_url=info.get("poster_url"),
             description=info.get("description"),
+            size=result.get("size"),
         )
 
         elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -355,6 +357,7 @@ async def _handle_bulk_series(message: Message, intent: dict, user_id: int, star
                 episode=ep["episode"],
                 requested_by=user_id,
                 subject_id=ep["subject_id"],
+                size=ep.get("size"),
             )
             media_ids.append(link_id)
 
