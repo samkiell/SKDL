@@ -5,8 +5,10 @@ Initializes the bot, registers routers, starts polling.
 
 import asyncio
 import logging
+import os
 import sys
 
+from aiohttp import web
 from aiogram import Bot, Dispatcher
 
 from config import settings
@@ -33,6 +35,24 @@ async def heartbeat_loop() -> None:
         await asyncio.sleep(60)
 
 
+async def health_check(_request: web.Request) -> web.Response:
+    return web.Response(text="SKDL Bot is running", status=200)
+
+
+async def start_health_server() -> web.AppRunner:
+    """Lightweight HTTP server to satisfy Render/cloud port binding."""
+    app = web.Application()
+    app.router.add_get("/", health_check)
+    app.router.add_get("/health", health_check)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.getenv("PORT", "8080"))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    logger.info("Health server listening on port %d", port)
+    return runner
+
+
 async def main() -> None:
     """Initialize bot and start polling."""
     bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
@@ -47,15 +67,20 @@ async def main() -> None:
 
     logger.info("SKDL Bot starting...")
 
+    # Start health server for cloud platforms (Render, Railway, etc.)
+    runner = await start_health_server()
+
     # Start heartbeat in background
     asyncio.create_task(heartbeat_loop())
 
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
+        await runner.cleanup()
         await bot.session.close()
         logger.info("SKDL Bot stopped.")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
