@@ -13,7 +13,7 @@ export async function GET() {
   try {
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: 'Say hello!' }],
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
     })
 
     return NextResponse.json({
