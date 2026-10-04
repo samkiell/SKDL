@@ -22,20 +22,17 @@ interface MediaRow {
   size?: number
 }
 
-function formatSize(bytes?: number): string {
-  if (!bytes || bytes <= 0) return ''
-  
-  // If the number is small (e.g., < 10,000), it's likely already in MB from the source API
-  let b = bytes
-  if (b < 100000 && b > 0) {
-      b = b * 1024 * 1024
-  }
+function formatSize(bytes?: number | string): string {
+  const b = typeof bytes === 'string' ? parseFloat(bytes) : Number(bytes)
+  if (!b || isNaN(b) || b <= 0) return ''
 
   const gb = b / (1024 * 1024 * 1024)
-  if (gb >= 1) return gb.toFixed(2) + ' GB'
+  if (gb >= 1) return `${gb.toFixed(2)} GB`
   const mb = b / (1024 * 1024)
-  if (mb >= 1) return mb.toFixed(1) + ' MB'
-  return b + ' B'
+  if (mb >= 1) return `${mb.toFixed(1)} MB`
+  const kb = b / 1024
+  if (kb >= 1) return `${kb.toFixed(0)} KB`
+  return `${b} B`
 }
 
 export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; proxyUrl: string }) {
@@ -58,12 +55,12 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
   const brandedFilename = displayFilename + ' - SKDL (skdlm.vercel.app)'
 
   const handleDownloadMp4 = () => {
-    const url = `/download/${row.id}?type=mp4&title=${encodeURIComponent(row.title)}&poster=${encodeURIComponent(posterUrl || '')}`
+    const url = `/download/${row.id}?type=mp4&title=${encodeURIComponent(row.title)}&poster=${encodeURIComponent(posterUrl || '')}&url=${encodeURIComponent(row.cdn_url || '')}&imdb_id=${encodeURIComponent(row.imdb_id || '')}`
     window.location.href = url
   }
 
   const handleDownloadMkv = () => {
-    const url = `/download/${row.id}?type=mkv&title=${encodeURIComponent(row.title)}&poster=${encodeURIComponent(posterUrl || '')}`
+    const url = `/download/${row.id}?type=mkv&title=${encodeURIComponent(row.title)}&poster=${encodeURIComponent(posterUrl || '')}&url=${encodeURIComponent(row.cdn_url || '')}&imdb_id=${encodeURIComponent(row.imdb_id || '')}`
     window.location.href = url
   }
 
