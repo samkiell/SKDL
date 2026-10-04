@@ -56,7 +56,7 @@ export default function PrivacyPage() {
         </section>
 
         <footer className="pt-12 border-t border-white/10 text-zinc-600 text-[10px] uppercase font-mono tracking-[0.2em] text-center">
-          SKDL // samkiel.online
+          SKDL // skdlm.vercel.app
         </footer>
       </div>
     </main>
