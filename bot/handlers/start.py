@@ -40,19 +40,19 @@ FEEDBACK_MESSAGE = """💬 **WE VALUE YOUR INPUT**
 
 Help us improve SKDL by sharing your thoughts, bug reports, or suggestions.
 
-🔗 Submit feedback: https://samkiel.online/feedback
+🔗 Submit feedback: https://skdlm.vercel.app/feedback
 
 Your input directly shapes the future of this bot. Thanks for being part of the journey!"""
 
 PRIVACY_MESSAGE = """⚖️ **PRIVACY POLICY**
 
 Your privacy is important to us. Read our full policy here:
-🔗 https://samkiel.online/privacy"""
+🔗 https://skdlm.vercel.app/privacy"""
 
 TERMS_MESSAGE = """📜 **TERMS OF USE**
 
 By using SKDL, you agree to our terms. Read them here:
-🔗 https://samkiel.online/terms"""
+🔗 https://skdlm.vercel.app/terms"""
 
 
 @router.message(Command("start"))
@@ -80,7 +80,7 @@ async def cmd_feedback(message: Message) -> None:
     try:
         await message.answer(FEEDBACK_MESSAGE, parse_mode="Markdown")
     except Exception:
-        await message.answer("💬 Share your feedback: https://samkiel.online/feedback")
+        await message.answer("💬 Share your feedback: https://skdlm.vercel.app/feedback")
 
 
 @router.message(Command("privacy"))
@@ -89,7 +89,7 @@ async def cmd_privacy(message: Message) -> None:
     try:
         await message.answer(PRIVACY_MESSAGE, parse_mode="Markdown")
     except Exception:
-        await message.answer("⚖️ Privacy Policy: https://samkiel.online/privacy")
+        await message.answer("⚖️ Privacy Policy: https://skdlm.vercel.app/privacy")
 
 
 @router.message(Command("terms"))
@@ -98,4 +98,4 @@ async def cmd_terms(message: Message) -> None:
     try:
         await message.answer(TERMS_MESSAGE, parse_mode="Markdown")
     except Exception:
-        await message.answer("📜 Terms of Use: https://samkiel.online/terms")
+        await message.answer("📜 Terms of Use: https://skdlm.vercel.app/terms")
