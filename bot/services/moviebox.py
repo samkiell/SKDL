@@ -42,7 +42,9 @@ with the season/episode params passed through.
 
 from __future__ import annotations
 
+import difflib
 import logging
+import re
 
 from moviebox_api.v1 import (
     Search,
@@ -70,6 +72,37 @@ def _normalize_quality(quality: str) -> str:
     # Strip trailing P and re-add uppercase
     q = q.rstrip("P") + "P"
     return q
+
+
+def _norm_title(text: str) -> str:
+    text = re.sub(r"\[.*?\]|\(.*?\)", " ", text or "")
+    return re.sub(r"[^a-z0-9 ]+", " ", text.lower()).strip()
+
+
+def _pick_best(items, query: str):
+    """
+    Pick the search result that best matches the query title.
+    MovieBox search ordering is unreliable (e.g. 'Reacher' returns unrelated shows first),
+    so rank by similarity and return None when nothing is a confident match.
+    """
+    q = _norm_title(query)
+    q_tokens = set(q.split())
+    best, best_score = None, 0.0
+    for item in items or []:
+        t = _norm_title(getattr(item, "title", ""))
+        if not t:
+            continue
+        score = difflib.SequenceMatcher(None, q, t).ratio()
+        if q_tokens and q_tokens.issubset(set(t.split())):
+            score = max(score, 0.9)
+        if t == q:
+            score = 1.0
+        if score > best_score:
+            best, best_score = item, score
+    if best is not None and best_score >= 0.85:
+        return best
+    logger.info("No confident match for '%s' (best score %.2f)", query, best_score)
+    return None
 
 
 def _resolve_sdk_media_file(downloadable, quality: str):
@@ -106,7 +139,9 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
         if not search_results.items:
             raise RuntimeError(f"No results found for '{title}'")
 
-        target = search_results.first_item
+        target = _pick_best(search_results.items, title)
+        if target is None:
+            raise RuntimeError(f"No results found for '{title}'")
 
         # Step 2: Resolve download metadata via SDK only.
         detail = DownloadableMovieFilesDetail(session, target)
@@ -145,15 +180,15 @@ async def get_available_qualities(title: str, is_series: bool, season: int | Non
         if is_actually_series:
             search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=10)
             results = await search.get_content_model()
-            if not results.items: return {}
-            target = results.first_item
+            target = _pick_best(results.items, title)
+            if target is None: return {}
             detail = DownloadableTVSeriesFilesDetail(session, target)
             downloadable = await detail.get_content_model(season=season, episode=episode)
         else:
             search = Search(session, query=title, subject_type=SubjectType.MOVIES, per_page=10)
             results = await search.get_content_model()
-            if not results.items: return {}
-            target = results.first_item
+            target = _pick_best(results.items, title)
+            if target is None: return {}
             detail = DownloadableMovieFilesDetail(session, target)
             downloadable = await detail.get_content_model()
             
@@ -197,10 +232,9 @@ async def get_episode(
             search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=10)
             search_results = await search.get_content_model()
 
-            if not search_results.items:
+            target = _pick_best(search_results.items, title)
+            if target is None:
                 raise RuntimeError(f"No series results found for '{title}'")
-
-            target = search_results.first_item
 
         # Step 2: Resolve episode download metadata via SDK only.
         detail = DownloadableTVSeriesFilesDetail(session, target)
@@ -251,10 +285,9 @@ async def get_season_episodes(title: str, season: int, quality: str = "1080p") -
     # One search to find the show
     search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=10)
     results = await search.get_content_model()
-    if not results.items:
+    target = _pick_best(results.items, title)
+    if target is None:
         return []
-    
-    target = results.first_item
     
     async def _fetch_safe(ep_num: int):
         try:
@@ -312,10 +345,9 @@ async def get_media_info(title: str, is_series: bool) -> dict:
         subject_type = SubjectType.TV_SERIES if is_series else SubjectType.MOVIES
         search = Search(session, query=title, subject_type=subject_type, per_page=10)
         results = await search.get_content_model()
-        if not results.items:
+        target = _pick_best(results.items, title)
+        if target is None:
             return {"title": title, "year": "Unknown"}
-        
-        target = results.first_item
         # Return dict with common metadata
         return {
             "title": target.title,
