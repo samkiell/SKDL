@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Protected routes: /lighthouse/* (except /lighthouse/login)
+  // Protected routes: /lighthouse and /lighthouse/* (except /lighthouse/login)
   if (pathname.startsWith('/lighthouse') && pathname !== '/lighthouse/login') {
     const authCookie = request.cookies.get('lighthouse_auth')?.value
 
@@ -18,5 +18,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/lighthouse/:path*'],
+  matcher: ['/lighthouse', '/lighthouse/:path*'],
 }
