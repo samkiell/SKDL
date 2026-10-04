@@ -33,7 +33,7 @@ export async function generateMetadata({
       
     if (data) {
       const row = data as MediaRow
-      const desc = row.description || `Watch ${row.title} on SKDL via samkiel.online`
+      const desc = row.description || `Watch ${row.title} on SKDL via skdlm.vercel.app`
       return {
         title: `${row.title} — SKDL`,
         description: desc,
