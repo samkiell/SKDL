@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase'
+import { getRedisClient } from '@/lib/redis'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
@@ -33,28 +33,17 @@ export default async function CollectionPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = getSupabaseClient()
+  const redis = getRedisClient()
 
-  const { data: colData } = await supabase
-    .from('collections')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle()
-
+  const colData = await redis.get<Collection>(`collection:${id}`)
   if (!colData) {
     return notFound()
   }
 
   const collection = colData as Collection
-
-  // Fetch all media items in this collection
-  const { data: mediaData } = await supabase
-    .from('media')
-    .select('id, title, season, episode, quality, cdn_url, poster_url')
-    .in('id', collection.media_ids)
-    .order('episode', { ascending: true })
-
-  const episodes = (mediaData || []) as MediaRow[]
+  const mediaKeys = collection.media_ids.map(mid => `media:${mid}`)
+  const rawEpisodes = mediaKeys.length > 0 ? await redis.mget<MediaRow[]>(...mediaKeys) : []
+  const episodes = (rawEpisodes.filter(Boolean) as MediaRow[]).sort((a, b) => (a.episode || 0) - (b.episode || 0))
 
   return (
     <main className="min-h-screen bg-[#050505] text-white pt-24 pb-12 px-4 md:px-8 font-sans">
