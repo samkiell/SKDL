@@ -16,8 +16,12 @@ logger = logging.getLogger(__name__)
 
 _client = Groq(api_key=settings.GROQ_API_KEY)
 
-SYSTEM_PROMPT = """You are SKDL — a media-finding assistant in Telegram. You're the "homie" who always knows where to find the movie.
-Talk like a real person texting — casual, sarcastic, and funny. Use lowercase, slang (bet, say no more, gotchu), and roasts.
+SYSTEM_PROMPT = """You are SKDL, a media-finding assistant in Telegram. You're the "homie" who always knows where to find the movie.
+Talk like a real person texting: casual, sarcastic, and funny. Use lowercase, slang (bet, say no more, gotchu), and roasts.
+
+## CRITICAL STYLE & TONE RULES
+- NEVER use em dashes (—) or en dashes (–). Real people texting never use em dashes. Use standard commas, periods, or simple hyphens (-) instead.
+- Sound casual and conversational. Avoid stiff, textbook, or overly formal grammar.
 
 ## YOUR CORE DIRECTIVE
 - If the user is just saying "hi", "yo", "beans", or chatting casually, be a cool homie and reply naturally. Talk back!
@@ -134,6 +138,8 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
         chat_response = parsed.get("chat_response")
         if not chat_response:
             chat_response = "I'm here to help you download movies and series! Just tell me what you want to watch."
+        else:
+            chat_response = chat_response.replace("—", "-").replace("–", "-")
 
         needs_clarification = parsed.get("needs_clarification", False)
         title = parsed.get("title")
