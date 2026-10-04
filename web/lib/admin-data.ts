@@ -1,173 +1,148 @@
-import { supabase } from './supabase'
+import { getRedisClient } from './redis'
 import { startOfToday, subDays, format } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
 
 export async function getDashboardStats() {
-  const today = startOfToday().toISOString()
-  const sevenDaysAgo = subDays(new Date(), 7).toISOString()
-
   try {
-    // 1. Total links
-    const { count: totalLinks } = await supabase
-      .from('media')
-      .select('*', { count: 'exact', head: true })
+    const redis = getRedisClient()
 
-    // 2. Links today
-    const { count: linksToday } = await supabase
-      .from('media')
-      .select('*', { count: 'exact', head: true })
-      .gte('requested_at', today)
+    // 1. Total media counter
+    const totalLinks = (await redis.get<number>('stats:total_media')) || 0
 
-    // 3. Active links (where expires_at > now)
-    const { count: activeLinks } = await supabase
-      .from('media')
-      .select('*', { count: 'exact', head: true })
-      .gt('expires_at', new Date().toISOString())
+    // 2. Recent media
+    const rawRecent = await redis.lrange<any>('media:recent', 0, 99)
+    const recentMedia = (rawRecent || []).map(r => (typeof r === 'string' ? JSON.parse(r) : r))
 
-    // 4. Last 7 days data for chart
-    const { data: chartDataRaw } = await supabase
-      .from('media')
-      .select('requested_at')
-      .gte('requested_at', sevenDaysAgo)
-      .order('requested_at', { ascending: true })
+    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    const now = new Date().getTime()
 
-    // Group by day for the last 7 days including today
+    const linksToday = recentMedia.filter(
+      r => r.requested_at && format(new Date(r.requested_at), 'yyyy-MM-dd') === todayStr
+    ).length
+
+    const activeLinks = recentMedia.filter(
+      r => r.expires_at && new Date(r.expires_at).getTime() > now
+    ).length
+
+    // 3. Chart data for last 7 days
     const chartData: { date: string; count: number }[] = []
-    const rawData = (chartDataRaw || []) as any[]
-    
     for (let i = 6; i >= 0; i--) {
       const date = subDays(new Date(), i)
       const dayLabel = format(date, 'MMM dd')
       const targetDateStr = format(date, 'yyyy-MM-dd')
-      const count = rawData.filter((row: any) => 
-        format(new Date(row.requested_at), 'yyyy-MM-dd') === targetDateStr
-      ).length || 0
-      
+      const count = recentMedia.filter(
+        r => r.requested_at && format(new Date(r.requested_at), 'yyyy-MM-dd') === targetDateStr
+      ).length
       chartData.push({ date: dayLabel, count })
     }
 
-    // 5. Content type breakdown
-    const { data: typeData } = await supabase
-      .from('media')
-      .select('type')
-
-    const rawTypeData = (typeData || []) as any[]
+    // 4. Content type breakdown
     const typesCount = [
-      { name: 'Movies', value: rawTypeData.filter((r: any) => r.type === 'movie').length || 0 },
-      { name: 'Series', value: rawTypeData.filter((r: any) => r.type === 'series').length || 0 }
+      { name: 'Movies', value: recentMedia.filter(r => r.type === 'movie').length },
+      { name: 'Series', value: recentMedia.filter(r => r.type === 'series').length },
     ]
 
-    // 6. Recent activity (last 10)
-    const { data: recentActivity } = await supabase
-      .from('media')
-      .select('*')
-      .order('requested_at', { ascending: false })
-      .limit(10)
-
-    // 7. Bot Status (Heartbeat check)
+    // 5. Bot Status (Heartbeat check)
     let botStatus = 'OFFLINE'
-    const { data: heartbeatData } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'bot_heartbeat')
-      .maybeSingle()
-
-    if (heartbeatData?.value) {
-      const lastHeartbeat = new Date(heartbeatData.value)
-      const diff = Date.now() - lastHeartbeat.getTime()
-      if (diff < 120000) { // 2 minutes threshold
+    const heartbeat = await redis.get<string>('bot:heartbeat')
+    if (heartbeat) {
+      const lastHeartbeat = new Date(heartbeat).getTime()
+      if (Date.now() - lastHeartbeat < 120000) {
         botStatus = 'ONLINE'
       }
     }
 
     return {
       stats: {
-        totalLinks: totalLinks || 0,
-        linksToday: linksToday || 0,
-        activeLinks: activeLinks || 0,
+        totalLinks: totalLinks || recentMedia.length,
+        linksToday,
+        activeLinks,
         botStatus,
-        botRequests: 0 // Placeholder, updated by getBotAnalytics
+        botRequests: (await redis.get<number>('stats:total_requests')) || 0,
       },
       chartData,
       typesCount,
-      recentActivity: recentActivity || []
+      recentActivity: recentMedia.slice(0, 10),
     }
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error)
+    console.error('Error fetching dashboard stats from Redis:', error)
     return {
-      stats: { totalLinks: 0, linksToday: 0, activeLinks: 0, botRequests: 0 },
+      stats: { totalLinks: 0, linksToday: 0, activeLinks: 0, botStatus: 'OFFLINE', botRequests: 0 },
       chartData: [],
       typesCount: [],
-      recentActivity: []
+      recentActivity: [],
     }
   }
 }
 
 export async function getBotAnalytics(page = 1, search = '') {
-  const today = startOfToday().toISOString()
-  const sevenDaysAgo = subDays(new Date(), 7).toISOString()
-
   try {
-    // 1. Overview stats
-    const { count: totalRequests } = await supabase.from('bot_logs').select('*', { count: 'exact', head: true })
-    const { count: requestsToday } = await supabase.from('bot_logs').select('*', { count: 'exact', head: true }).gte('created_at', today)
-    const { count: requestsThisWeek } = await supabase.from('bot_logs').select('*', { count: 'exact', head: true }).gte('created_at', sevenDaysAgo)
-    
-    // Unique users
-    const { data: usersTodayRaw } = await supabase.from('bot_logs').select('user_id').gte('created_at', today)
-    const usersToday = (usersTodayRaw || []) as { user_id: number }[]
-    const uniqueUsersToday = new Set(usersToday.map(u => u.user_id)).size
-    
-    const { data: usersTotalRaw } = await supabase.from('bot_logs').select('user_id')
-    const usersTotal = (usersTotalRaw || []) as { user_id: number }[]
-    const uniqueUsersTotal = new Set(usersTotal.map(u => u.user_id)).size
+    const redis = getRedisClient()
+    const rawLogs = await redis.lrange<any>('bot_logs', 0, 999)
+    const logs = (rawLogs || []).map(r => (typeof r === 'string' ? JSON.parse(r) : r))
 
-    // Success rate
-    const { count: found } = await supabase.from('bot_logs').select('*', { count: 'exact', head: true }).eq('result_found', true)
-    const successRate = totalRequests ? (found || 0) / totalRequests : 0
+    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    const sevenDaysAgo = subDays(new Date(), 7).getTime()
 
-    // 2. Action breakdown
-    const { data: actionsRaw } = await supabase.from('bot_logs').select('action')
-    const actions = (actionsRaw || []) as { action: string }[]
+    const totalRequests = (await redis.get<number>('stats:total_requests')) || logs.length
+    const requestsToday = logs.filter(
+      l => l.created_at && format(new Date(l.created_at), 'yyyy-MM-dd') === todayStr
+    ).length
+    const requestsThisWeek = logs.filter(
+      l => l.created_at && new Date(l.created_at).getTime() >= sevenDaysAgo
+    ).length
+
+    const usersToday = new Set(
+      logs
+        .filter(l => l.created_at && format(new Date(l.created_at), 'yyyy-MM-dd') === todayStr)
+        .map(l => l.user_id)
+    ).size
+
+    const uniqueUsersTotal = new Set(logs.map(l => l.user_id)).size
+    const foundCount = logs.filter(l => l.result_found).length
+    const successRate = totalRequests ? foundCount / totalRequests : 0
+
+    // Action breakdown
     const actionBreakdown: Record<string, number> = {
       download_movie: 0,
       download_series: 0,
       not_found: 0,
       error: 0,
-      clarification: 0
+      clarification: 0,
     }
-    actions.forEach(a => {
-      if (actionBreakdown[a.action] !== undefined) actionBreakdown[a.action]++
+    logs.forEach(l => {
+      if (l.action && actionBreakdown[l.action] !== undefined) {
+        actionBreakdown[l.action]++
+      }
     })
 
-    // 3. Last 7 days chart
-    const { data: dailyDataRaw } = await supabase.from('bot_logs').select('created_at').gte('created_at', sevenDaysAgo)
-    const dailyData = (dailyDataRaw || []) as { created_at: string }[]
-    const requestsByDay: { date: string, count: number }[] = []
+    // Last 7 days chart
+    const requestsByDay: { date: string; count: number }[] = []
     for (let i = 6; i >= 0; i--) {
       const date = subDays(new Date(), i)
       const dateStr = format(date, 'yyyy-MM-dd')
-      const count = dailyData.filter(r => format(new Date(r.created_at), 'yyyy-MM-dd') === dateStr).length || 0
+      const count = logs.filter(
+        l => l.created_at && format(new Date(l.created_at), 'yyyy-MM-dd') === dateStr
+      ).length
       requestsByDay.push({ date: format(date, 'MMM dd'), count })
     }
 
-    // 4. Top movies & users
-    const { data: logsForAggRaw } = await supabase.from('bot_logs').select('result_title, user_id, username, display_name')
-    const logsForAgg = (logsForAggRaw || []) as { result_title: string | null, user_id: number, username: string | null, display_name: string | null }[]
-    
+    // Top movies & users
     const movieCounts: Record<string, number> = {}
-    const userCounts: Record<string, { count: number, name: string }> = {}
-    
-    logsForAgg.forEach(log => {
+    const userCounts: Record<string, { count: number; name: string }> = {}
+
+    logs.forEach(log => {
       if (log.result_title) {
         movieCounts[log.result_title] = (movieCounts[log.result_title] || 0) + 1
       }
-      const userId = log.user_id.toString()
-      if (!userCounts[userId]) {
-        userCounts[userId] = { count: 0, name: log.username || log.display_name || userId }
+      if (log.user_id) {
+        const userId = log.user_id.toString()
+        if (!userCounts[userId]) {
+          userCounts[userId] = { count: 0, name: log.username || log.display_name || userId }
+        }
+        userCounts[userId].count++
       }
-      userCounts[userId].count++
     })
 
     const topMovies = Object.entries(movieCounts)
@@ -180,53 +155,46 @@ export async function getBotAnalytics(page = 1, search = '') {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
 
-    // 5. Recent (Paginated + Search)
+    // Filter & Paginate
+    let filteredLogs = logs
+    if (search && search.trim() !== '') {
+      const s = search.trim().toLowerCase()
+      filteredLogs = logs.filter(l =>
+        (l.username && l.username.toLowerCase().includes(s)) ||
+        (l.display_name && l.display_name.toLowerCase().includes(s)) ||
+        (l.result_title && l.result_title.toLowerCase().includes(s)) ||
+        (l.query && l.query.toLowerCase().includes(s))
+      )
+    }
+
     const pageSize = 20
     const offset = (page - 1) * pageSize
-    
-    let queryBuilder = supabase
-      .from('bot_logs')
-      .select('*', { count: 'exact' })
-      
-    if (search && search.trim() !== '') {
-      const s = search.trim()
-      // Use quotes for the search pattern to handle spaces/commas correctly in Postgrest OR filter
-      const filter = `username.ilike."%${s}%",display_name.ilike."%${s}%",result_title.ilike."%${s}%",query.ilike."%${s}%"`
-      queryBuilder = queryBuilder.or(filter)
-    }
-
-    const { data: recent, error: recentError, count: totalRecent } = await queryBuilder
-      .order('created_at', { ascending: false })
-      .range(offset, offset + pageSize - 1)
-
-    if (recentError) {
-      console.error('Supabase Error (bot_logs recent):', recentError.message || recentError)
-    }
+    const recent = filteredLogs.slice(offset, offset + pageSize)
 
     return {
       overview: {
-        total_requests: totalRequests || 0,
-        requests_today: requestsToday || 0,
-        requests_this_week: requestsThisWeek || 0,
-        unique_users_today: uniqueUsersToday,
+        total_requests: totalRequests,
+        requests_today: requestsToday,
+        requests_this_week: requestsThisWeek,
+        unique_users_today: usersToday,
         unique_users_total: uniqueUsersTotal,
-        success_rate: successRate
+        success_rate: successRate,
       },
       action_breakdown: actionBreakdown,
       requests_by_day: requestsByDay,
       top_movies: topMovies,
       top_users: topUsers,
-      recent: recent || []
+      recent,
     }
   } catch (error) {
-    console.error('Error fetching bot analytics:', error)
+    console.error('Error fetching bot analytics from Redis:', error)
     return {
       overview: { total_requests: 0, requests_today: 0, requests_this_week: 0, unique_users_today: 0, unique_users_total: 0, success_rate: 0 },
       action_breakdown: { download_movie: 0, download_series: 0, not_found: 0, error: 0, clarification: 0 },
       requests_by_day: [],
       top_movies: [],
       top_users: [],
-      recent: []
+      recent: [],
     }
   }
 }
