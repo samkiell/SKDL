@@ -280,18 +280,18 @@ class BaseFileMetadata(BaseModel):
 
 class MediaFileMetadata(BaseFileMetadata):
     id: str
-    url: HttpUrl
-    resolution: int
-    size: int
+    url: str = ""
+    resolution: int = 0
+    size: int = 0
 
 
 class CaptionFileMetadata(BaseFileMetadata):
     id: str
     lan: str
     lanName: str
-    url: HttpUrl
-    size: int
-    delay: int
+    url: str = ""
+    size: int = 0
+    delay: int = 0
 
 
 class DownloadableFilesMetadata(BaseModel):
