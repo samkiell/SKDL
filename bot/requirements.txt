@@ -3,6 +3,6 @@ groq
 redis
 python-dotenv
 nanoid
-moviebox-api
+moviebox-api==0.5.4
 httpx
 python-dateutil
