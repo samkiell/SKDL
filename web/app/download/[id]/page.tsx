@@ -52,18 +52,32 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
     setLoading(true)
     setError(null)
     try {
-      let data;
-      const externalUrl = searchParams.get('url');
+      let data: any = {}
+      const externalUrl = searchParams.get('url')
+      const externalImdb = searchParams.get('imdb_id')
 
       if (id === 'srt' && type === 'srt' && externalUrl) {
          data = { title: title, url: externalUrl, type: 'srt' }
       } else {
-        const res = await fetch(`/api/media/${id}`)
-        data = await res.json()
-        if (data.error) throw new Error(data.error)
+        try {
+          const res = await fetch(`/api/media/${id}`)
+          if (res.ok) {
+            data = await res.json()
+          }
+        } catch (e) {
+          console.warn('Failed to fetch /api/media/' + id, e)
+        }
       }
 
-      const safeFilename = data.title.replace(/[^a-zA-Z0-9.\- _]/g, '').trim()
+      const finalUrl = data?.url || externalUrl
+      const finalTitle = data?.title || title || 'Media'
+      const finalImdb = data?.imdb_id || externalImdb || ''
+
+      if (!finalUrl || finalUrl === 'undefined' || finalUrl === 'null') {
+        throw new Error('Unable to resolve download URL. Please return to the player page and try again.')
+      }
+
+      const safeFilename = finalTitle.replace(/[^a-zA-Z0-9.\- _]/g, '').trim()
       const displayFilename = data.type === 'series' 
         ? `${safeFilename} S${data.season?.toString().padStart(2, '0')}E${data.episode?.toString().padStart(2, '0')}`
         : safeFilename
@@ -71,7 +85,7 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
 
       if (data.type === 'srt' || type === 'srt') {
          const downloadName = `${brandedFilename}.srt`
-         const proxyUrl = `/api/proxy?url=${encodeURIComponent(data.url)}&filename=${encodeURIComponent(downloadName)}&dl=1`
+         const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(downloadName)}&dl=1`
          
          // Track SRT Download
          fetch('/api/track/download', {
@@ -79,7 +93,7 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({
              media_id: id,
-             title: data.title,
+             title: finalTitle,
              media_type: 'subtitle',
              format: 'srt'
            }),
@@ -94,32 +108,45 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
       if (type === 'mkv') {
         setIsMuxing(true)
         try {
-            const subRes = await fetch(`/api/subtitles?query=${encodeURIComponent(displayFilename)}&imdb_id=${data.imdb_id || ''}`)
-            const subData = await subRes.json()
-            const subtitleUrl = subData.subtitleUrl || 'not_found'
+            let subtitleUrl = ''
+            try {
+              const subRes = await fetch(`/api/subtitles?query=${encodeURIComponent(displayFilename)}&imdb_id=${finalImdb}`)
+              if (subRes.ok) {
+                const subData = await subRes.json()
+                if (subData.found && subData.subtitleUrl) {
+                  subtitleUrl = subData.subtitleUrl
+                }
+              }
+            } catch (subErr) {
+              console.warn('Subtitle resolution skipped for mux:', subErr)
+            }
             
-            // Using direct window.location for streaming instead of fetch().blob()
-            // This prevents browser memory limits and Vercel fetch timeouts.
-            const muxUrl = `/api/mux?videoUrl=${encodeURIComponent(data.url)}&subtitleUrl=${encodeURIComponent(subtitleUrl)}&filename=${encodeURIComponent(brandedFilename)}`
-            
-            fetch('/api/track/download', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                media_id: id,
-                title: data.title,
-                media_type: data.type || 'series',
-                format: 'mkv'
-              }),
-              keepalive: true
-            }).catch(() => {})
+            if (subtitleUrl) {
+              const muxUrl = `/api/mux?videoUrl=${encodeURIComponent(finalUrl)}&subtitleUrl=${encodeURIComponent(subtitleUrl)}&filename=${encodeURIComponent(brandedFilename)}`
+              
+              fetch('/api/track/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  media_id: id,
+                  title: finalTitle,
+                  media_type: data.type || 'series',
+                  format: 'mkv'
+                }),
+                keepalive: true
+              }).catch(() => {})
 
-            window.location.href = muxUrl
+              window.location.href = muxUrl
+            } else {
+              // Direct stream download if subtitles are unavailable
+              const downloadName = `${brandedFilename}.mp4`
+              const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(downloadName)}&dl=1`
+              window.location.href = proxyUrl
+            }
         } catch (err) {
             console.error('MKV Muxing failed:', err)
             setError('Failed to mux MKV. Please try MP4 instead.')
         } finally {
-            // Give the browser time to trigger the download before resetting states
             setTimeout(() => {
                 setIsMuxing(false)
                 setLoading(false)
@@ -129,7 +156,7 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
       }
 
       const downloadName = `${brandedFilename}.mp4`
-      const proxyUrl = `/api/proxy?url=${encodeURIComponent(data.url)}&filename=${encodeURIComponent(downloadName)}&dl=1`
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(downloadName)}&dl=1`
       
       // Track Download Event (Fire & Forget)
       fetch('/api/track/download', {
@@ -137,9 +164,9 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           media_id: id,
-          title: data.title,
-          media_type: data.type || (type === 'srt' ? 'subtitle' : 'movie'), // fallback
-          format: type // mp4, mkv, or srt
+          title: finalTitle,
+          media_type: data.type || (type === 'srt' ? 'subtitle' : 'movie'),
+          format: type
         }),
         keepalive: true
       }).catch(() => {})
