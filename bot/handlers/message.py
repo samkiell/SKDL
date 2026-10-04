@@ -192,6 +192,10 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
     if season is None or episode is None:
         # Fetch show info to make it dynamic
         info = await get_media_info(title, is_series=True)
+        if not info.get("subject_id"):
+            await message.answer(f"😕 couldn't find '{title}' on my end. try the exact title or another spelling.")
+            clear_pending_request(user_id)
+            return
         builder = InlineKeyboardBuilder()
 
         if season is not None and episode is None:
