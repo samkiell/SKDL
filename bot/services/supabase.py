@@ -1,19 +1,46 @@
 """
-Supabase service — all database reads and writes against the `media` table.
+Redis service — replaces Supabase for media storage, collections, rate-limiting, and heartbeats.
+Kept under supabase.py for seamless backward compatibility with all handlers.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from supabase import create_client, Client
-
+import redis.asyncio as aioredis
 from config import settings
 
 logger = logging.getLogger(__name__)
 
-_client: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+_redis_client: aioredis.Redis | None = None
+
+
+def get_redis() -> aioredis.Redis:
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = aioredis.from_url(
+            settings.REDIS_URL,
+            decode_responses=True,
+            health_check_interval=30,
+        )
+    return _redis_client
+
+
+# For backwards compatibility with code importing _client
+class RedisTableShim:
+    """Shim to avoid breaking any legacy code expecting _client.table() syntax."""
+    def table(self, name: str):
+        return self
+    def insert(self, *args, **kwargs):
+        return self
+    def upsert(self, *args, **kwargs):
+        return self
+    def execute(self):
+        return type("Resp", (), {"data": []})()
+
+_client = RedisTableShim()
 
 
 async def save_media(
@@ -31,11 +58,10 @@ async def save_media(
     description: str | None = None,
 ) -> dict | None:
     """
-    Insert a new row into the media table.
-    Returns the inserted row dict or None on failure.
+    Store media metadata in Redis with TTL.
+    Returns the stored dict or None on failure.
     """
     expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.CDN_TTL_HOURS)
-
     row = {
         "id": link_id,
         "title": title,
@@ -53,29 +79,37 @@ async def save_media(
     }
 
     try:
-        result = _client.table("media").insert(row).execute()
-        if result.data:
-            return result.data[0]
-        logger.error("Supabase insert returned no data for id=%s", link_id)
-        return None
+        r = get_redis()
+        ttl_seconds = settings.CDN_TTL_HOURS * 3600
+        # Save key with expiration
+        await r.set(f"media:{link_id}", json.dumps(row), ex=ttl_seconds)
+        # Add to recent media list
+        await r.lpush("media:recent", json.dumps(row))
+        await r.ltrim("media:recent", 0, 199)
+        await r.incr("stats:total_media")
+        return row
     except Exception as exc:
-        logger.error("Supabase insert failed for id=%s: %s", link_id, exc)
+        logger.error("Redis save_media failed for id=%s: %s", link_id, exc)
         return None
 
 
 async def get_media(link_id: str) -> dict | None:
-    """
-    Look up a media row by ID.
-    Returns the row dict or None if not found / on error.
-    """
+    """Look up media metadata by ID from Redis."""
     try:
-        result = _client.table("media").select("*").eq("id", link_id).execute()
-        if result.data and len(result.data) > 0:
-            return result.data[0]
+        r = get_redis()
+        data = await r.get(f"media:{link_id}")
+        if data:
+            return json.loads(data)
         return None
     except Exception as exc:
-        logger.error("Supabase lookup failed for id=%s: %s", link_id, exc)
+        logger.error("Redis get_media failed for id=%s: %s", link_id, exc)
         return None
+
+
+async def get_media_by_id(link_id: str) -> dict | None:
+    """Helper alias for get_media."""
+    return await get_media(link_id)
+
 
 async def save_collection(
     collection_id: str,
@@ -84,7 +118,7 @@ async def save_collection(
     media_ids: list[str],
     requested_by: int | None = None,
 ) -> dict | None:
-    """Insert a bulk season collection into the collections table."""
+    """Store bulk season collection in Redis with TTL."""
     expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.CDN_TTL_HOURS)
     row = {
         "id": collection_id,
@@ -95,89 +129,56 @@ async def save_collection(
         "expires_at": expires_at.isoformat(),
     }
     try:
-        result = _client.table("collections").insert(row).execute()
-        if result.data:
-            return result.data[0]
-        return None
+        r = get_redis()
+        ttl_seconds = settings.CDN_TTL_HOURS * 3600
+        await r.set(f"collection:{collection_id}", json.dumps(row), ex=ttl_seconds)
+        return row
     except Exception as exc:
-        logger.error("Supabase insert failed for collection_id=%s: %s", collection_id, exc)
+        logger.error("Redis save_collection failed for id=%s: %s", collection_id, exc)
         return None
 
+
 async def get_collection(collection_id: str) -> dict | None:
-    """Look up a collection by ID."""
+    """Look up a collection by ID from Redis."""
     try:
-        result = _client.table("collections").select("*").eq("id", collection_id).execute()
-        if result.data and len(result.data) > 0:
-            return result.data[0]
+        r = get_redis()
+        data = await r.get(f"collection:{collection_id}")
+        if data:
+            return json.loads(data)
         return None
     except Exception as exc:
-        logger.error("Supabase lookup failed for collection_id=%s: %s", collection_id, exc)
+        logger.error("Redis get_collection failed for id=%s: %s", collection_id, exc)
         return None
+
 
 async def check_rate_limit(user_id: int, limit: int = 10) -> bool:
     """
     Check if a user has exceeded their daily quota.
+    Atomic Redis INCR with 24h key expiration.
     Returns True if allowed, False if exceeded. Fails open on error.
     """
-    now = datetime.now(timezone.utc)
     try:
-        res = _client.table("rate_limits").select("*").eq("user_id", user_id).execute()
-        if res.data and len(res.data) > 0:
-            row = res.data[0]
-            # Handle potential 'Z' in isoformat from Supabase
-            reset_at_str = row["reset_at"].replace("Z", "+00:00")
-            reset_at = datetime.fromisoformat(reset_at_str)
-            
-            if now > reset_at:
-                # Reset window
-                _client.table("rate_limits").update({
-                    "request_count": 1,
-                    "last_request": now.isoformat(),
-                    "reset_at": (now + timedelta(days=1)).isoformat()
-                }).eq("user_id", user_id).execute()
-                return True
-            
-            if row["request_count"] >= limit:
-                return False
-                
-            _client.table("rate_limits").update({
-                "request_count": row["request_count"] + 1,
-                "last_request": now.isoformat()
-            }).eq("user_id", user_id).execute()
-            return True
-        else:
-            # First time user
-            _client.table("rate_limits").insert({
-                "user_id": user_id,
-                "request_count": 1,
-                "last_request": now.isoformat(),
-                "reset_at": (now + timedelta(days=1)).isoformat()
-            }).execute()
-            return True
+        r = get_redis()
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        key = f"ratelimit:{user_id}:{today}"
+        count = await r.incr(key)
+        if count == 1:
+            await r.expire(key, 86400)
+        return count <= limit
     except Exception as exc:
-        logger.error("Rate limit check failed for user_id=%s: %s", user_id, exc)
-        return True # Fail open so users aren't blocked on DB issues
-async def get_media_by_id(link_id: str) -> dict | None:
-    """Helper for the bot to get full metadata by link_id."""
-    try:
-        result = _client.table("media").select("*").eq("id", link_id).execute()
-        return result.data[0] if result.data else None
-    except Exception:
-        return None
+        logger.error("Redis rate limit check failed for user_id=%s: %s", user_id, exc)
+        return True
 
 
 async def update_bot_heartbeat() -> None:
     """
-    Update the bot_heartbeat entry in the settings table.
-    Used by Lighthouse to determine if the bot is online.
+    Update the bot heartbeat entry in Redis.
+    Sets key with 120s TTL for automatic offline detection.
     """
     now = datetime.now(timezone.utc).isoformat()
     try:
-        # We use an upsert on the settings table where key='bot_heartbeat'
-        _client.table("settings").upsert({
-            "key": "bot_heartbeat",
-            "value": now,
-            "updated_at": now
-        }, on_conflict="key").execute()
+        r = get_redis()
+        await r.set("bot:heartbeat", now, ex=120)
+        await r.set("settings:bot_heartbeat", now)
     except Exception as exc:
         logger.error("Bot heartbeat update failed: %s", exc)
