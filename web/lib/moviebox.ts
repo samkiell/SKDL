@@ -26,8 +26,8 @@ const API_HOST = "h5-api.aoneroom.com"
 const REFERER_BASE = "https://h5.aoneroom.com"
 
 const DEFAULT_HEADERS = {
-  'Referer': 'https://fmoviesunblocked.net/',
-  'Origin': 'https://h5.aoneroom.com',
+  'Referer': 'https://videodownloader.site/',
+  'Origin': 'https://videodownloader.site',
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
   'Accept': 'application/json, text/plain, */*',
   'Accept-Language': 'en-US,en;q=0.9',
@@ -87,7 +87,7 @@ export async function getMovieBoxDetails(
   // If season and episode are both 0, treat it as a movie download path
   const isMoviePath = type === 'movie' || (season === 0 && episode === 0);
   
-  let url = `https://${API_HOST}/wefeed-h5-bff/web/subject/download?subjectId=${subjectId}`
+  let url = `https://${API_HOST}/wefeed-h5api-bff/subject/download?subjectId=${subjectId}`
   
   // Only pass se and ep for series episodes (not for movies or the 0/0 case)
   if (!isMoviePath) {
