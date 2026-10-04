@@ -23,8 +23,17 @@ export default function DashboardPage() {
     try {
       setLoading(true)
       const res = await fetch('/api/lighthouse/stats')
+      if (res.status === 401) {
+        window.location.href = '/lighthouse/login'
+        return
+      }
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`)
+      }
       const result = await res.json()
-      setData(result)
+      if (result && result.stats) {
+        setData(result)
+      }
       setLastUpdated(new Date())
     } catch (error) {
       console.error('Failed to fetch stats:', error)
@@ -56,14 +65,14 @@ export default function DashboardPage() {
   }
 
   const stats = [
-    { name: 'Total Links', value: data?.stats.totalLinks, icon: Link2, color: 'blue' },
-    { name: 'Generated Today', value: data?.stats.linksToday, icon: Activity, color: 'emerald' },
-    { name: 'Active Sessions', value: data?.stats.activeLinks, icon: Zap, color: 'amber' },
+    { name: 'Total Links', value: data?.stats?.totalLinks ?? 0, icon: Link2, color: 'blue' },
+    { name: 'Generated Today', value: data?.stats?.linksToday ?? 0, icon: Activity, color: 'emerald' },
+    { name: 'Active Sessions', value: data?.stats?.activeLinks ?? 0, icon: Zap, color: 'amber' },
     { 
       name: 'Bot Engine', 
-      value: data?.stats.botStatus || 'OFFLINE', 
+      value: data?.stats?.botStatus || 'OFFLINE', 
       icon: BarChart3, 
-      color: data?.stats.botStatus === 'ONLINE' ? 'emerald' : 'zinc' 
+      color: data?.stats?.botStatus === 'ONLINE' ? 'emerald' : 'zinc' 
     },
   ]
 
