@@ -22,6 +22,7 @@ from services.session import (
 from services.moviebox import get_movie, get_episode, get_available_qualities, get_media_info, get_season_episodes
 from services.link import generate_id, build_url
 from services.supabase import save_media, save_collection, check_rate_limit
+from moviebox_api.v1.constants import DOWNLOAD_REQUEST_HEADERS
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -142,7 +143,7 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
         try:
             file_name = f"{result['title']} ({result['year']}) {result['quality']} - SKDL(skdlm.vercel.app).mp4"
             await message.answer_document(
-                URLInputFile(str(result["cdn_url"]), filename=file_name),
+                URLInputFile(str(result["cdn_url"]), filename=file_name, headers=DOWNLOAD_REQUEST_HEADERS),
                 caption=f"🎬 {result['title']}"
             )
         except Exception as e:
@@ -292,7 +293,7 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
         try:
             file_name = f"{result['title']} S{result['season']}E{result['episode']} {result['quality']} - SKDL(skdlm.vercel.app).mp4"
             await message.answer_document(
-                URLInputFile(str(result["cdn_url"]), filename=file_name),
+                URLInputFile(str(result["cdn_url"]), filename=file_name, headers=DOWNLOAD_REQUEST_HEADERS),
                 caption=f"📺 {result['title']} S{result['season']}E{result['episode']}"
             )
         except Exception as e:
