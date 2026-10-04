@@ -11,6 +11,12 @@ import {
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 
+const formatSafeDate = (dateStr?: string | null, fmt = 'yyyy/MM/dd') => {
+  if (!dateStr) return '—'
+  const d = new Date(dateStr)
+  return isNaN(d.getTime()) ? '—' : format(d, fmt)
+}
+
 export default function LinksPage() {
   const [links, setLinks] = useState<any[]>([])
   const [total, setTotal] = useState(0)
@@ -23,12 +29,18 @@ export default function LinksPage() {
   const fetchLinks = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/lighthouse/links?page=${page}&search=${search}`)
+      const res = await fetch(`/api/lighthouse/links?page=${page}&search=${encodeURIComponent(search)}`)
+      if (res.status === 401) {
+        window.location.href = '/lighthouse/login'
+        return
+      }
       const data = await res.json()
-      setLinks(data.links)
-      setTotal(data.total)
+      setLinks(Array.isArray(data?.links) ? data.links : [])
+      setTotal(data?.total || 0)
     } catch (error) {
       console.error('Failed to fetch links:', error)
+      setLinks([])
+      setTotal(0)
     } finally {
       setLoading(false)
     }
@@ -107,7 +119,7 @@ export default function LinksPage() {
                     Scanning Blocks...
                   </td>
                 </tr>
-              ) : links.length === 0 ? (
+              ) : !links || links.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-32 text-center text-zinc-800 font-mono text-[10px] uppercase tracking-[0.5em] font-bold">
                     Log Clear / No Signals Detected
@@ -137,21 +149,21 @@ export default function LinksPage() {
                   <td className="p-10 align-middle">
                     <div className="space-y-1">
                       <p className="text-[10px] text-zinc-500 font-mono font-bold tracking-tighter">
-                        {format(new Date(link.requested_at), 'yyyy/MM/dd')}
+                        {formatSafeDate(link.requested_at, 'yyyy/MM/dd')}
                       </p>
                       <p className="text-[10px] text-zinc-700 font-mono uppercase tracking-[0.1em] font-bold">
-                        {format(new Date(link.requested_at), 'HH:mm:ss')}
+                        {formatSafeDate(link.requested_at, 'HH:mm:ss')}
                       </p>
                     </div>
                   </td>
                   <td className="p-10 align-middle">
                     <div className="space-y-1">
                        <p className="text-[10px] font-mono text-zinc-500 group-hover:text-zinc-300 uppercase font-bold tracking-tighter transition-colors">
-                        {format(new Date(link.expires_at), 'yyyy/MM/dd')}
+                        {formatSafeDate(link.expires_at, 'yyyy/MM/dd')}
                       </p>
                       <div className="flex items-center gap-1.5 font-mono text-[9px] text-zinc-700 font-bold uppercase tracking-widest">
                          <div className="w-1 h-1 rounded-full bg-white opacity-30" />
-                         {format(new Date(link.expires_at), 'HH:mm:ss')}
+                         {formatSafeDate(link.expires_at, 'HH:mm:ss')}
                       </div>
                     </div>
                   </td>
