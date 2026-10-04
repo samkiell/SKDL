@@ -24,7 +24,7 @@ const jbMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   // Core
-  metadataBase: new URL('https://samkiel.online'),
+  metadataBase: new URL('https://skdlm.vercel.app'),
   title: {
     default: 'SKDL — Netflix and Chill with SKDL',
     template: '%s | SKDL',
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://samkiel.online',
+    url: 'https://skdlm.vercel.app',
     siteName: 'SKDL',
     title: 'SKDL — AI-Powered Movie & TV Show Downloads',
     description:
@@ -123,7 +123,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'SKDL',
-  url: 'https://samkiel.online',
+  url: 'https://skdlm.vercel.app',
   description:
     'AI-powered movie and TV show discovery and download platform, powered by the @SK_DLBOT Telegram bot.',
   applicationCategory: 'EntertainmentApplication',
