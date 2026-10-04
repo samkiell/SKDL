@@ -43,6 +43,10 @@ class Settings:
         if not groq_key:
             raise RuntimeError("GROQ_API_KEY is required")
 
+        mb_api_host = os.getenv("MOVIEBOX_API_HOST_V2", "h5-api.aoneroom.com")
+        if not mb_api_host or mb_api_host == "h5.aoneroom.com":
+            mb_api_host = "h5-api.aoneroom.com"
+
         return cls(
             TELEGRAM_BOT_TOKEN=token,
             REDIS_URL=redis_url,
@@ -50,7 +54,7 @@ class Settings:
             LINK_BASE_URL=os.getenv("LINK_BASE_URL", "https://movies.samkiel.dev"),
             WEB_PROXY_BASE_URL=os.getenv("WEB_PROXY_BASE_URL", "https://skdlm.vercel.app"),
             CDN_TTL_HOURS=int(os.getenv("CDN_TTL_HOURS", "6")),
-            MOVIEBOX_API_HOST_V2=os.getenv("MOVIEBOX_API_HOST_V2", "h5-api.aoneroom.com"),
+            MOVIEBOX_API_HOST_V2=mb_api_host,
             MOVIEBOX_DOWNLOAD_API_HOST=os.getenv("MOVIEBOX_DOWNLOAD_API_HOST", "h5.aoneroom.com"),
             OPENSUBTITLES_API_KEY=os.getenv("OPENSUBTITLES_API_KEY"),
             GROQ_MODEL=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
