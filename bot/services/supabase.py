@@ -56,6 +56,7 @@ async def save_media(
     imdb_id: str | None = None,
     poster_url: str | None = None,
     description: str | None = None,
+    size: int | None = None,
 ) -> dict | None:
     """
     Store media metadata in Redis with TTL.
@@ -79,6 +80,7 @@ async def save_media(
         "imdb_id": imdb_id,
         "poster_url": poster_url,
         "description": description,
+        "size": size,
     }
 
     try:
