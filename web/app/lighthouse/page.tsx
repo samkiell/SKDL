@@ -14,6 +14,18 @@ import LinksChart from './components/LinksChart'
 import TypeBreakdownChart from './components/TypeBreakdownChart'
 import Link from 'next/link'
 
+const formatSafeDistance = (dateStr?: string | null) => {
+  if (!dateStr) return 'Recently'
+  const d = new Date(dateStr)
+  return isNaN(d.getTime()) ? 'Recently' : formatDistanceToNow(d, { addSuffix: true })
+}
+
+const formatSafeDate = (dateStr?: string | null, fmt = 'MM/dd HH:mm') => {
+  if (!dateStr) return '—'
+  const d = new Date(dateStr)
+  return isNaN(d.getTime()) ? '—' : format(d, fmt)
+}
+
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -181,12 +193,12 @@ export default function DashboardPage() {
                     </span>
                   </td>
                   <td className="py-6 text-[10px] text-zinc-500 font-mono font-bold uppercase tracking-tighter">
-                    {formatDistanceToNow(new Date(activity.requested_at), { addSuffix: true })}
+                    {formatSafeDistance(activity.requested_at)}
                   </td>
                   <td className="py-6 text-right">
                     <div className="flex flex-col items-end gap-1">
                       <span className="text-[10px] font-mono text-zinc-400 group-hover:text-white transition-colors uppercase font-bold tracking-tighter">
-                        {format(new Date(activity.expires_at), 'MM/dd HH:mm')}
+                        {formatSafeDate(activity.expires_at)}
                       </span>
                       <div className="w-24 h-1 bg-zinc-900 rounded-full overflow-hidden">
                          <div className="h-full bg-zinc-600 rounded-full w-2/3" />
