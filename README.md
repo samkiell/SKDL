@@ -1,6 +1,6 @@
 # SKDL — Netflix and Chill
 
-A Telegram bot (`@SK_DLBOT`) that lets you request movies and TV series in plain English, powered by Groq AI. Delivers files directly in chat and generates temporary download links at `samkiel.online`.
+A Telegram bot (`@SK_DLBOT`) that lets you request movies and TV series in plain English, powered by Groq AI. Delivers files directly in chat and generates temporary download links at `skdlm.vercel.app`.
 
 ---
 
@@ -19,7 +19,7 @@ A Telegram bot (`@SK_DLBOT`) that lets you request movies and TV series in plain
 - **Web:** Next.js 16 (App Router), Supabase, TypeScript
 - **DB:** Supabase (Postgres)
 - **Hosting:** Railway (both services)
-- **Domain:** samkiel.online
+- **Domain:** skdlm.vercel.app
 
 ---
 
@@ -28,7 +28,7 @@ A Telegram bot (`@SK_DLBOT`) that lets you request movies and TV series in plain
 1. User messages `@SK_DLBOT` in plain English
 2. Groq parses the intent and extracts title, quality, season/episode
 3. Bot fetches content via moviebox-api
-4. Bot sends the file (if under 2GB) + a short link (`samkiel.online/[id]`)
+4. Bot sends the file (if under 2GB) + a short link (`skdlm.vercel.app/[id]`)
 5. Link redirects to CDN URL for 6 hours, then shows an expired page
 
 ---
@@ -110,7 +110,7 @@ TELEGRAM_BOT_TOKEN=
 SUPABASE_URL=
 SUPABASE_KEY=
 GROQ_API_KEY=
-LINK_BASE_URL=https://samkiel.online
+LINK_BASE_URL=https://skdlm.vercel.app
 CDN_TTL_HOURS=6
 MOVIEBOX_API_HOST_V2=h5-api.aoneroom.com
 ```
@@ -138,4 +138,4 @@ Both services deploy from this monorepo as separate Railway services.
 - Root directory: `web`
 - Start command: `npm run build && npm start`
 - Add env vars from `web/.env`
-- Add custom domain: `samkiel.online`
+- Add custom domain: `skdlm.vercel.app`
