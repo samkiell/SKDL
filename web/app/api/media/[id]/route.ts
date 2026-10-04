@@ -47,11 +47,14 @@ export async function GET(
     }
 
     return NextResponse.json({ 
-      url: finalUrl,
+      url: finalUrl || row.cdn_url,
       title: row.title,
       type: row.type,
       season: row.season,
-      episode: row.episode
+      episode: row.episode,
+      imdb_id: (row as any).imdb_id || null,
+      size: (row as any).size || null,
+      subject_id: row.subject_id || null,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
