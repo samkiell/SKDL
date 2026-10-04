@@ -85,7 +85,7 @@ async function handleMuxRequest(request: NextRequest) {
         filename = body.filename
     }
 
-    if (!videoUrl || !subtitleUrl || !filename) {
+    if (!videoUrl || videoUrl === 'undefined' || videoUrl === 'null' || !filename) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
     }
 
@@ -98,8 +98,8 @@ async function handleMuxRequest(request: NextRequest) {
             const file = fs.createWriteStream(dest)
             const headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-                'Referer': 'https://fmoviesunblocked.net/',
-                'Origin': 'https://h5.aoneroom.com',
+                'Referer': 'https://videodownloader.site/',
+                'Origin': 'https://videodownloader.site',
                 'Accept': '*/*',
             }
 
@@ -120,9 +120,8 @@ async function handleMuxRequest(request: NextRequest) {
         })
     }
 
-    const hasSubs = subtitleUrl && subtitleUrl !== 'not_found'
+    const hasSubs = subtitleUrl && subtitleUrl !== 'not_found' && subtitleUrl !== 'undefined' && subtitleUrl !== 'null'
     if (hasSubs) {
-        // console.info('[api/mux] downloading subtitles...', { subs: subtitleUrl }) // Log less verbose URL to avoid cluttering logs
         try {
             await downloadFile(subtitleUrl, subtitleFile)
         } catch (e) {
@@ -133,8 +132,8 @@ async function handleMuxRequest(request: NextRequest) {
     // Build headers string for FFmpeg - Matching api/proxy exactly
     const ffHeaders = [
         'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Referer: https://fmoviesunblocked.net/',
-        'Origin: https://h5.aoneroom.com',
+        'Referer: https://videodownloader.site/',
+        'Origin: https://videodownloader.site',
         'Accept: */*',
         'Accept-Language: en-US,en;q=0.9',
         'Connection: keep-alive',
@@ -142,7 +141,6 @@ async function handleMuxRequest(request: NextRequest) {
         'Sec-Fetch-Mode: no-cors',
         'Sec-Fetch-Site: cross-site',
         'Accept-Encoding: identity',
-        'Range: bytes=0-',
     ].join('\r\n') + '\r\n'
 
     console.info('[api/mux] starting streaming mux with ffmpeg...', { video: videoUrl })
