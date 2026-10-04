@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseClient } from '@/lib/supabase'
+import { getRedisClient } from '@/lib/redis'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const supabase = getSupabaseClient()
-    const { data, error } = await supabase
-      .from('settings')
-      .select('*')
-
-    if (error) throw error
-
-    // Map to simple key-value object
-    const settings = (data || []).reduce((acc: Record<string, any>, curr: { key: string; value: any }) => {
-      acc[curr.key] = curr.value
-      return acc
-    }, {} as Record<string, any>)
-
+    const redis = getRedisClient()
+    const settings = (await redis.hgetall('settings')) || {}
+    const heartbeat = await redis.get('bot:heartbeat')
+    if (heartbeat) {
+      settings.bot_heartbeat = heartbeat
+    }
     return NextResponse.json(settings)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -33,11 +26,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 })
     }
 
-    const supabase = getSupabaseClient()
-    const { error } = await (supabase.from('settings') as any)
-      .upsert({ key, value, updated_at: new Date().toISOString() })
-
-    if (error) throw error
+    const redis = getRedisClient()
+    await redis.hset('settings', { [key]: value })
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
