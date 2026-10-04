@@ -87,7 +87,7 @@ async def cmd_movie(message: Message) -> None:
         # Attempt direct file delivery
         try:
             from aiogram.types import URLInputFile
-            file_name = f"{result['title']} ({result['year']}) {result['quality']} - SKDL(samkiel.online).mp4"
+            file_name = f"{result['title']} ({result['year']}) {result['quality']} - SKDL(skdlm.vercel.app).mp4"
             await message.answer_document(
                 URLInputFile(str(result["cdn_url"]), filename=file_name),
                 caption=f"🎬 {result['title']}"
