@@ -61,6 +61,7 @@ async def save_media(
     Store media metadata in Redis with TTL.
     Returns the stored dict or None on failure.
     """
+    now = datetime.now(timezone.utc).isoformat()
     expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.CDN_TTL_HOURS)
     row = {
         "id": link_id,
@@ -71,6 +72,8 @@ async def save_media(
         "season": season,
         "episode": episode,
         "requested_by": requested_by,
+        "requested_at": now,
+        "created_at": now,
         "expires_at": expires_at.isoformat(),
         "subject_id": subject_id,
         "imdb_id": imdb_id,
