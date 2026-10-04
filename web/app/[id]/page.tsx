@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase'
+import { getRedisClient } from '@/lib/redis'
 import { getMovieBoxDetails, searchMovieBox } from '@/lib/moviebox'
 import { Metadata } from 'next'
 import PlayerPageClient from './PlayerPageClient'
@@ -28,12 +28,8 @@ export async function generateMetadata({
   const { id } = await params
   
   try {
-    const supabase = getSupabaseClient()
-    const { data } = await supabase
-      .from('media')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle()
+    const redis = getRedisClient()
+    const data = await redis.get<MediaRow>(`media:${id}`)
       
     if (data) {
       const row = data as MediaRow
@@ -102,28 +98,19 @@ export default async function LinkPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  let supabase
+  let data: MediaRow | null = null
   try {
-    supabase = getSupabaseClient()
+    const redis = getRedisClient()
+    data = await redis.get<MediaRow>(`media:${id}`)
   } catch (e) {
-    console.error('Supabase client init failed:', e)
+    console.error('Redis lookup failed for id:', id, e)
     notFound()
   }
   
   console.log('--- Redirecting Link:', id)
 
-  const { data, error } = await supabase
-    .from('media')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle()
-
-  if (error) {
-    console.error('Supabase Error for id:', id, error)
-  }
-  
   if (!data) {
-    console.log('Record not found in DB for id:', id)
+    console.log('Record not found in Redis for id:', id)
     notFound()
   }
 
