@@ -88,9 +88,10 @@ async def cmd_movie(message: Message) -> None:
         # Attempt direct file delivery
         try:
             from aiogram.types import URLInputFile
+            from moviebox_api.v1.constants import DOWNLOAD_REQUEST_HEADERS
             file_name = f"{result['title']} ({result['year']}) {result['quality']} - SKDL(skdlm.vercel.app).mp4"
             await message.answer_document(
-                URLInputFile(str(result["cdn_url"]), filename=file_name),
+                URLInputFile(str(result["cdn_url"]), filename=file_name, headers=DOWNLOAD_REQUEST_HEADERS),
                 caption=f"🎬 {result['title']}"
             )
         except Exception as e:
