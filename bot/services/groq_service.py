@@ -89,20 +89,38 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
                 }
             ]
         })
-        model_name = "llama-3.2-11b-vision-preview" 
+        candidate_models = ["qwen/qwen3.8-27b"]
     else:
-        # Standard text-only fallback to 8B (higher quota)
         messages.append({"role": "user", "content": user_message})
-        model_name = "llama-3.1-8b-instant"
+        candidate_models = list(dict.fromkeys([
+            settings.GROQ_MODEL,
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.8-27b",
+        ]))
 
     try:
-        response = _client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            temperature=0.7,
-            max_tokens=600,
-            response_format={"type": "json_object"},
-        )
+        response = None
+        last_exc = None
+        for model_name in candidate_models:
+            try:
+                response = _client.chat.completions.create(
+                    model=model_name,
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=600,
+                    response_format={"type": "json_object"},
+                )
+                break
+            except Exception as exc:
+                last_exc = exc
+                logger.warning("Groq model %s failed: %s", model_name, exc)
+                continue
+
+        if response is None:
+            if last_exc:
+                raise last_exc
+            return FALLBACK_INTENT.copy()
 
         raw = response.choices[0].message.content
         if not raw:
