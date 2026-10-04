@@ -57,6 +57,7 @@ async def cmd_movie(message: Message) -> None:
             imdb_id=result.get("imdb_id"),
             poster_url=result.get("poster_url"),
             description=result.get("description"),
+            size=result.get("size"),
         )
 
         elapsed_ms = int((time.monotonic() - start_time) * 1000)
