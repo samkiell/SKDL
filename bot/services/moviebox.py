@@ -114,6 +114,7 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
         media_file = _resolve_sdk_media_file(downloadable, quality)
         cdn_url = str(media_file.url)
         resolution = int(media_file.resolution or 0)
+        size = int(getattr(media_file, "size", 0) or 0)
 
         if not cdn_url:
             raise RuntimeError("Could not resolve a playable URL for selected movie")
@@ -123,6 +124,7 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
             "title": target.title,
             "year": target.releaseDate.year,
             "quality": f"{resolution}p" if resolution > 0 else quality,
+            "size": size,
             "subject_id": target.subjectId,
             "imdb_id": getattr(target, "imdbId", None) or getattr(target, "imdb_id", None),
             "poster_url": str(target.cover.url) if hasattr(target, "cover") else None,
@@ -206,6 +208,7 @@ async def get_episode(
         media_file = _resolve_sdk_media_file(downloadable, quality)
         cdn_url = str(media_file.url)
         resolution = int(media_file.resolution or 0)
+        size = int(getattr(media_file, "size", 0) or 0)
 
         if not cdn_url:
             raise RuntimeError("Could not resolve a playable URL for selected episode")
@@ -216,6 +219,7 @@ async def get_episode(
             "season": season,
             "episode": episode,
             "quality": f"{resolution}p" if resolution > 0 else quality,
+            "size": size,
             "subject_id": target.subjectId,
             "imdb_id": getattr(target, "imdbId", None) or getattr(target, "imdb_id", None),
             "poster_url": str(target.cover.url) if hasattr(target, "cover") else None,
