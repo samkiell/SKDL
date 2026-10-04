@@ -3,6 +3,10 @@ groq
 redis
 python-dotenv
 nanoid
-moviebox-api==0.5.4
 httpx
 python-dateutil
+beautifulsoup4
+throttlebuster
+tqdm
+aiofiles
+pydantic
