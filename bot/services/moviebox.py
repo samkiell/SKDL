@@ -141,14 +141,14 @@ async def get_available_qualities(title: str, is_series: bool, season: int | Non
         is_actually_series = is_series and not (season == 0 and episode == 0)
 
         if is_actually_series:
-            search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=1)
+            search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=10)
             results = await search.get_content_model()
             if not results.items: return {}
             target = results.first_item
             detail = DownloadableTVSeriesFilesDetail(session, target)
             downloadable = await detail.get_content_model(season=season, episode=episode)
         else:
-            search = Search(session, query=title, subject_type=SubjectType.MOVIES, per_page=1)
+            search = Search(session, query=title, subject_type=SubjectType.MOVIES, per_page=10)
             results = await search.get_content_model()
             if not results.items: return {}
             target = results.first_item
@@ -245,7 +245,7 @@ async def get_season_episodes(title: str, season: int, quality: str = "1080p") -
     session = Session()
     
     # One search to find the show
-    search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=1)
+    search = Search(session, query=title, subject_type=SubjectType.TV_SERIES, per_page=10)
     results = await search.get_content_model()
     if not results.items:
         return []
@@ -274,26 +274,22 @@ async def get_subtitles(subject_id: str, is_series: bool, season: int = 0, episo
     """
     session = Session()
     try:
+        from types import SimpleNamespace
+        dummy_item = SimpleNamespace(subjectId=subject_id, detailPath="")
         if is_series:
-            # We need to resolve the search item first to use it in Detail
-            # This is a bit redundant but the SDK requires a SearchResultsItem
-            search = Search(session, query=subject_id, subject_type=SubjectType.TV_SERIES, per_page=1)
-            results = await search.get_content_model()
-            if not results.items: return None
-            target = results.first_item
-            detail = DownloadableTVSeriesFilesDetail(session, target)
+            detail = DownloadableTVSeriesFilesDetail.__new__(DownloadableTVSeriesFilesDetail)
+            detail.session = session
+            detail._item = dummy_item
             downloadable = await detail.get_content_model(season=season, episode=episode)
         else:
-            search = Search(session, query=subject_id, subject_type=SubjectType.MOVIES, per_page=1)
-            results = await search.get_content_model()
-            if not results.items: return None
-            target = results.first_item
-            detail = DownloadableMovieFilesDetail(session, target)
+            detail = DownloadableMovieFilesDetail.__new__(DownloadableMovieFilesDetail)
+            detail.session = session
+            detail._item = dummy_item
             downloadable = await detail.get_content_model()
             
         captions = getattr(downloadable, "captions", []) or []
         # Find English
-        english = next((c for c in captions if c.lan == "en" or "english" in c.lanName.lower()), None)
+        english = next((c for c in captions if c.lan == "en" or "english" in getattr(c, "lanName", "").lower()), None)
         
         if english:
             return {
@@ -310,7 +306,7 @@ async def get_media_info(title: str, is_series: bool) -> dict:
     try:
         from moviebox_api.v1.constants import SubjectType
         subject_type = SubjectType.TV_SERIES if is_series else SubjectType.MOVIES
-        search = Search(session, query=title, subject_type=subject_type, per_page=1)
+        search = Search(session, query=title, subject_type=subject_type, per_page=10)
         results = await search.get_content_model()
         if not results.items:
             return {"title": title, "year": "Unknown"}
