@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseClient } from '@/lib/supabase'
+import { getRedisClient } from '@/lib/redis'
 
 export const dynamic = 'force-dynamic'
 import { getFreshCdnUrl } from '@/lib/moviebox'
@@ -22,14 +22,10 @@ export async function GET(
   const { id } = (await params) as { id: string }
   
   try {
-    const supabase = getSupabaseClient()
-    const { data, error } = await supabase
-      .from('media')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle()
+    const redis = getRedisClient()
+    const data = await redis.get<MediaRow>(`media:${id}`)
 
-    if (error || !data) {
+    if (!data) {
       return NextResponse.json({ error: 'Media not found' }, { status: 404 })
     }
 
