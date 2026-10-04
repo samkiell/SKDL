@@ -139,7 +139,7 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
 
         # Attempt direct file delivery
         try:
-            file_name = f"{result['title']} ({result['year']}) {result['quality']} - SKDL(samkiel.online).mp4"
+            file_name = f"{result['title']} ({result['year']}) {result['quality']} - SKDL(skdlm.vercel.app).mp4"
             await message.answer_document(
                 URLInputFile(str(result["cdn_url"]), filename=file_name),
                 caption=f"🎬 {result['title']}"
@@ -288,7 +288,7 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
 
         # Attempt direct file delivery
         try:
-            file_name = f"{result['title']} S{result['season']}E{result['episode']} {result['quality']} - SKDL(samkiel.online).mp4"
+            file_name = f"{result['title']} S{result['season']}E{result['episode']} {result['quality']} - SKDL(skdlm.vercel.app).mp4"
             await message.answer_document(
                 URLInputFile(str(result["cdn_url"]), filename=file_name),
                 caption=f"📺 {result['title']} S{result['season']}E{result['episode']}"
