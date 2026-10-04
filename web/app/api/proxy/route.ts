@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const filename = searchParams.get('filename')
   const isDownloadFile = searchParams.get('dl') === '1'
   
-  if (!url) {
+  if (!url || url === 'undefined' || url === 'null') {
     return new NextResponse('Missing URL', { status: 400 })
   }
 
@@ -18,25 +18,19 @@ export async function GET(request: NextRequest) {
     headers.set('Accept', isDownloadApi ? 'application/json, text/plain, */*' : '*/*')
     headers.set('Accept-Language', 'en-US,en;q=0.9')
     headers.set('Connection', 'keep-alive')
+    headers.set('Referer', 'https://videodownloader.site/')
+    headers.set('Origin', 'https://videodownloader.site')
 
-    if (isDownloadApi) {
-      headers.set('Referer', 'https://videodownloader.site/')
-      headers.set('Origin', 'https://videodownloader.site')
-    } else {
-      headers.set('Referer', 'https://fmoviesunblocked.net/')
-      headers.set('Origin', 'https://h5.aoneroom.com')
+    if (!isDownloadApi) {
       headers.set('Sec-Fetch-Dest', 'video')
       headers.set('Sec-Fetch-Mode', 'no-cors')
       headers.set('Sec-Fetch-Site', 'cross-site')
-      headers.set('Accept-Encoding', 'identity')
-      headers.set('Range', 'bytes=0-')
+      
+      const clientRange = request.headers.get('range')
+      if (clientRange) {
+        headers.set('Range', clientRange)
+      }
     }
-
-    console.info('[proxy] outgoing', {
-      target: url,
-      isDownloadApi,
-      headers: Object.fromEntries(headers.entries()),
-    })
 
     const response = await fetch(url, { 
       headers,
@@ -44,14 +38,7 @@ export async function GET(request: NextRequest) {
       cache: 'no-store'
     })
 
-    console.info('[proxy] response', {
-      target: url,
-      status: response.status,
-      statusText: response.statusText,
-    })
-
     if (!response.ok) {
-        // Log detailed error from CDN if possible for debugging
         const text = await response.text()
         console.error(`[proxy] error body: ${text.slice(0, 500)}`)
         return new NextResponse(`Proxy error: ${response.status} ${response.statusText}`, { status: response.status })
@@ -69,17 +56,29 @@ export async function GET(request: NextRequest) {
     
     let contentDisposition = 'inline'
     if (filename) {
-      contentDisposition = `${isDownloadFile ? 'attachment' : 'inline'}; filename="${filename}"`
+      contentDisposition = `${isDownloadFile ? 'attachment' : 'inline'}; filename="${encodeURIComponent(filename)}"`
+    }
+
+    const resHeaders = new Headers()
+    resHeaders.set('Content-Type', response.headers.get('content-type') || 'video/mp4')
+    resHeaders.set('Content-Disposition', contentDisposition)
+    resHeaders.set('Cache-Control', 'no-cache')
+    resHeaders.set('Accept-Ranges', 'bytes')
+
+    const contentRange = response.headers.get('content-range')
+    if (contentRange) {
+      resHeaders.set('Content-Range', contentRange)
+    }
+
+    const contentLength = response.headers.get('content-length')
+    if (contentLength) {
+      resHeaders.set('Content-Length', contentLength)
     }
 
     return new NextResponse(response.body, {
-      status: 200,
-      headers: {
-        'Content-Type': response.headers.get('Content-Type') || 'video/mp4',
-        'Content-Disposition': contentDisposition, 
-        'Cache-Control': 'no-cache',
-        'Accept-Ranges': 'bytes', // Enable seeking if the source supports it
-      },
+      status: response.status,
+      statusText: response.statusText,
+      headers: resHeaders,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'
