@@ -114,7 +114,7 @@ SUPABASE_KEY=
 GROQ_API_KEY=
 LINK_BASE_URL=https://skdlm.vercel.app
 CDN_TTL_HOURS=6
-MOVIEBOX_API_HOST_V2=h5.aoneroom.com
+MOVIEBOX_API_HOST_V2=h5-api.aoneroom.com
 ```
 
 ### Web
