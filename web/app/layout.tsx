@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Analytics } from '@vercel/analytics/react'
 import Script from 'next/script'
 import { Inter, Space_Grotesk, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
@@ -238,6 +239,7 @@ export default function RootLayout({
           )}
         </ConditionalFooter>
         <PageTracker />
+        <Analytics />
       </body>
     </html>
   )
