@@ -23,6 +23,7 @@ export interface MovieBoxSearchResult {
 }
 
 const API_HOST = "h5-api.aoneroom.com"
+const SEARCH_HOST = "h5.aoneroom.com"
 const REFERER_BASE = "https://h5.aoneroom.com"
 
 const DEFAULT_HEADERS = {
@@ -53,7 +54,7 @@ export async function searchMovieBox(
   query: string,
   type: 'movie' | 'series'
 ): Promise<MovieBoxSearchResult | null> {
-  const url = `https://${API_HOST}/wefeed-h5-bff/web/subject/search`
+  const url = `https://${SEARCH_HOST}/wefeed-h5-bff/web/subject/search`
   const subjectType = type === 'movie' ? 1 : 2
 
   try {
@@ -105,7 +106,12 @@ export async function getMovieBoxDetails(
     }
 
     const json = await response.json()
-    const downloads: MovieBoxDownload[] = json.data?.downloads || []
+    const rawDownloads = json.data?.downloads || []
+    const downloads: MovieBoxDownload[] = rawDownloads.map((d: any) => ({
+      url: d.url,
+      resolution: Number(d.resolution) || 0,
+      size: Number(d.size) || 0
+    }))
     const captions: MovieBoxCaption[] = json.data?.captions || []
     
     return { downloads, captions }
