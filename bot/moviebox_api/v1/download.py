@@ -2,6 +2,7 @@
 and later performing the actual download as well
 """
 
+import os
 from pathlib import Path
 
 import httpx
@@ -92,7 +93,7 @@ def resolve_media_file_to_be_downloaded(
 class BaseDownloadableFilesDetail(BaseContentProviderAndHelper):
     """Base class for fetching and modelling downloadable files detail"""
 
-    _url = get_absolute_url(r"/wefeed-h5-bff/web/subject/download")
+    _url = f"https://{os.getenv('MOVIEBOX_API_HOST_V2', 'h5-api.aoneroom.com')}/wefeed-h5api-bff/subject/download"
 
     def __init__(
         self, session: Session, item: SearchResultsItem | ItemJsonDetailsModel
@@ -123,11 +124,15 @@ class BaseDownloadableFilesDetail(BaseContentProviderAndHelper):
         Returns:
             t.Dict: Request params
         """
-        return {
+        params = {
             "subjectId": self._item.subjectId,
             "se": season,
             "ep": episode,
         }
+        detail_path = getattr(self._item, "detailPath", None) or getattr(self._item, "detail_path", None)
+        if detail_path:
+            params["detailPath"] = detail_path
+        return params
 
     async def get_content(self, season: int, episode: int) -> dict:
         """Performs the actual fetching of files detail.
@@ -139,17 +144,29 @@ class BaseDownloadableFilesDetail(BaseContentProviderAndHelper):
         Returns:
             t.Dict: File details
         """
-        # Referer
         request_header = {
-            "Referer": get_absolute_url(f"/movies/{self._item.detailPath}")
+            "Referer": "https://videodownloader.site/",
+            "Origin": "https://videodownloader.site",
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            ),
         }
-        # Without the referer, empty response will be served.
 
         content = await self.session.get_with_cookies_from_api(
             url=self._url,
             params=self._create_request_params(season, episode),
             headers=request_header,
         )
+        if isinstance(content, dict):
+            if "downloads" in content and isinstance(content["downloads"], list):
+                content["downloads"] = [
+                    d for d in content["downloads"] if isinstance(d, dict) and d.get("url")
+                ]
+            if "captions" in content and isinstance(content["captions"], list):
+                content["captions"] = [
+                    c for c in content["captions"] if isinstance(c, dict) and c.get("url")
+                ]
         return content
 
     async def get_content_model(
