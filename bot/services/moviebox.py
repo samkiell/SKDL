@@ -59,7 +59,7 @@ logger = logging.getLogger(__name__)
 
 # Override moviebox host if configured
 import os
-os.environ.setdefault("MOVIEBOX_API_HOST_V2", settings.MOVIEBOX_API_HOST_V2)
+os.environ["MOVIEBOX_API_HOST_V2"] = settings.MOVIEBOX_API_HOST_V2
 
 
 def _normalize_quality(quality: str) -> str:
@@ -172,7 +172,7 @@ async def get_available_qualities(title: str, is_series: bool, season: int | Non
 
 
 async def get_episode(
-    title: str, season: int, episode: int, quality: str = "1080p", target=None
+    title: str, season: int, episode: int, quality: str = "1080p", target=None, session: Session | None = None
 ) -> dict:
     """
     Search for a TV series episode and return its CDN URL + metadata without downloading.
@@ -183,7 +183,7 @@ async def get_episode(
     Raises:
         RuntimeError on search or resolution failure.
     """
-    session = Session()
+    session = session or Session()
 
     try:
         # Guard: if se and ep are both 0, treat it as a movie
@@ -224,7 +224,7 @@ async def get_episode(
 
     except Exception as exc:
         err_msg = str(exc)
-        if "no downloadable mediafiles" in err_msg.lower():
+        if "no downloadable" in err_msg.lower() and "media" in err_msg.lower():
             logger.info("Episode '%s' S%dE%d not found (expected during bulk scan)", title, season, episode)
         else:
             logger.error(
@@ -254,7 +254,7 @@ async def get_season_episodes(title: str, season: int, quality: str = "1080p") -
     
     async def _fetch_safe(ep_num: int):
         try:
-            return await get_episode(title, season, ep_num, quality, target=target)
+            return await get_episode(title, season, ep_num, quality, target=target, session=session)
         except Exception:
             return None
 
