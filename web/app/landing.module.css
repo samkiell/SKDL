@@ -286,11 +286,23 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .hero {
+    min-height: auto;
+    padding: 2rem 5vw 3.5rem;
+    justify-content: flex-start;
+  }
+  .heroLabel {
+    margin-bottom: 1.25rem;
+    font-size: 0.75rem;
+    letter-spacing: 2.5px;
+  }
   .heroTitle {
-    font-size: 4rem;
+    font-size: 3.6rem;
+    margin-bottom: 1.5rem;
   }
   .heroDesc {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+    margin-bottom: 2.5rem;
   }
   .tickerItem {
     font-size: 1.2rem;
