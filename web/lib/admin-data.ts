@@ -12,7 +12,16 @@ export async function getDashboardStats() {
 
     // 2. Recent media
     const rawRecent = await redis.lrange<any>('media:recent', 0, 99)
-    const recentMedia = (rawRecent || []).map(r => (typeof r === 'string' ? JSON.parse(r) : r))
+    const recentMedia = (rawRecent || []).map(r => {
+      const item = typeof r === 'string' ? JSON.parse(r) : { ...r }
+      if (!item.requested_at) {
+        item.requested_at = item.created_at || new Date().toISOString()
+      }
+      if (!item.expires_at) {
+        item.expires_at = new Date(Date.now() + 6 * 3600 * 1000).toISOString()
+      }
+      return item
+    })
 
     const todayStr = format(new Date(), 'yyyy-MM-dd')
     const now = new Date().getTime()
