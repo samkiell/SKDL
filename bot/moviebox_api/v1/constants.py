@@ -50,28 +50,27 @@ logger.info(f"Moviebox host url - {HOST_URL}")
 
 DEFAULT_REQUEST_HEADERS = {
     "X-Client-Info": '{"timezone":"Africa/Nairobi"}',
-    # TODO: Set this value dynamically.
-    "Accept-Language": "en-US,en;q=0.5",
-    "Accept": "application/json",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "application/json, text/plain, */*",
     "User-Agent": (
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
-        "(KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Firefox/137.0"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     ),
-    "Referer": HOST_URL,  # "https://moviebox.ng/movies/titanic-kGoZgiDdff?id=
-    # 206379412718240440&scene&page_from=search_detail&type=%2Fmovie%2Fdetail",
+    "Referer": "https://videodownloader.site/",
+    "Origin": "https://videodownloader.site",
     "Host": SELECTED_HOST,
-    # "X-Source": "",
 }
 """For general http requests other than download"""
 
-DOWNLOAD_REQUEST_REFERER = "https://fmoviesunblocked.net/"
+DOWNLOAD_REQUEST_REFERER = "https://videodownloader.site/"
 
 DOWNLOAD_REQUEST_HEADERS = {
-    "Accept": "*/*",  # "video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,
-    # audio/*;q=0.6,*/*;q=0.5",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 "
-    "Firefox/137.0",
-    "Origin": SELECTED_HOST,
+    "Accept": "*/*",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    ),
+    "Origin": "https://videodownloader.site",
     "Referer": DOWNLOAD_REQUEST_REFERER,
 }
 """For media and subtitle files download requests"""
