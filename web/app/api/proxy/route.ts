@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const url = searchParams.get('url')
@@ -17,7 +19,6 @@ export async function GET(request: NextRequest) {
     headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')
     headers.set('Accept', isDownloadApi ? 'application/json, text/plain, */*' : '*/*')
     headers.set('Accept-Language', 'en-US,en;q=0.9')
-    headers.set('Connection', 'keep-alive')
     headers.set('Referer', 'https://videodownloader.site/')
     headers.set('Origin', 'https://videodownloader.site')
 
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
         const text = await response.text()
         console.error(`[proxy] error body: ${text.slice(0, 500)}`)
-        return new NextResponse(`Proxy error: ${response.status} ${response.statusText}`, { status: response.status })
+        return new NextResponse(`Proxy error: ${response.status} ${response.statusText}${text ? ' - ' + text.slice(0, 200) : ''}`, { status: response.status })
     }
 
     if (isDownloadApi) {
