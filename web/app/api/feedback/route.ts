@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getRedisClient } from '@/lib/redis'
 
 export async function POST(req: Request) {
   try {
@@ -18,21 +18,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Message too long (max 1000 chars)' }, { status: 400 })
     }
 
-    // Insert into Supabase
-    const { error } = await supabase
-      .from('feedback')
-      .insert([
-        {
-          type,
-          message,
-          name: name?.trim() || null,
-        }
-      ])
-
-    if (error) {
-      console.error('Feedback insert error:', error)
-      return NextResponse.json({ error: 'Failed to submit feedback' }, { status: 500 })
-    }
+    // Insert into Redis
+    const redis = getRedisClient()
+    await redis.lpush('feedback', JSON.stringify({
+      id: crypto.randomUUID(),
+      type,
+      message,
+      name: name?.trim() || null,
+      created_at: new Date().toISOString(),
+    }))
 
     return NextResponse.json({ ok: true })
   } catch (err) {
