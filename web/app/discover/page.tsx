@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '@/lib/supabase'
+import { getRedisClient } from '@/lib/redis'
 import DiscoverGrid from './DiscoverGrid'
 import AdBanner from '../components/AdBanner'
 
@@ -12,24 +12,19 @@ export default async function DiscoverPage(props: { searchParams: SearchParams }
   const page = typeof searchParams.page === 'string' ? parseInt(searchParams.page) : 1
   const PAGE_SIZE = 24
 
-  const supabase = getSupabaseClient()
-  
-  let query = supabase
-    .from('media')
-    .select('id, title, type, quality, created_at, poster_url')
-    .order('created_at', { ascending: false })
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE) // Fetch PAGE_SIZE + 1 to detect next page
+  const redis = getRedisClient()
+  let displayData: any[] = []
+  let hasNextPage = false
 
-  if (q) {
-    query = query.ilike('title', `%${q}%`)
-  }
-
-  const { data, error } = await query
-  const hasNextPage = (data?.length || 0) > PAGE_SIZE
-  const displayData = data?.slice(0, PAGE_SIZE) || []
-
-  if (error) {
-    console.error('Failed to fetch discover list:', error)
+  try {
+    const rawList = await redis.lrange<any>('media:recent', 0, 199)
+    const allItems = (rawList || []).map(item => typeof item === 'string' ? JSON.parse(item) : item)
+    const filtered = q ? allItems.filter(item => item.title?.toLowerCase().includes(q.toLowerCase())) : allItems
+    const start = (page - 1) * PAGE_SIZE
+    displayData = filtered.slice(start, start + PAGE_SIZE)
+    hasNextPage = filtered.length > start + PAGE_SIZE
+  } catch (error) {
+    console.error('Failed to fetch discover list from Redis:', error)
   }
 
   return (
