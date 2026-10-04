@@ -173,8 +173,9 @@ export default async function LinkPage({
   // Pass metadata to the client
   const rowForClient = {
       ...row,
+      cdn_url: finalUrl,
       poster_url: finalPoster,
-      size: finalSize
+      size: Number(finalSize) || Number(row.size) || 0
   }
 
   return <PlayerPageClient row={rowForClient as any} proxyUrl={proxyUrl} />
