@@ -83,6 +83,13 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         : safeFilename
       const brandedFilename = displayFilename + ' - SKDL (skdlm.vercel.app)'
 
+      const isEmbed = Boolean(finalUrl && (finalUrl.includes('embed') || finalUrl.includes('autoembed') || finalUrl.includes('2embed') || finalUrl.includes('vidsrc')))
+      if (isEmbed) {
+        window.location.href = `/${id}`
+        setLoading(false)
+        return
+      }
+
       if (data.type === 'srt' || type === 'srt') {
          const downloadName = `${brandedFilename}.srt`
          const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(downloadName)}&dl=1`
