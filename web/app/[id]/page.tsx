@@ -140,13 +140,25 @@ export default async function LinkPage({
       if (downloads.length > 0) {
         // Pick highest resolution available
         const sorted = downloads.sort((a, b) => (b.resolution || 0) - (a.resolution || 0))
-        finalUrl = sorted[0].url
-        finalSize = sorted[0].size || 0
+        if (sorted[0]?.url) {
+          finalUrl = sorted[0].url
+        }
+        if (sorted[0]?.size) {
+          finalSize = sorted[0].size
+        }
         console.log('Refreshed CDN URL via MovieBox Detail')
       }
     } catch (e) {
       console.error('Failed to refresh CDN URL via MovieBox Detail:', e)
     }
+  }
+
+  // Ensure stored fallbacks are retained if refresh didn't provide new values
+  if (!finalUrl && row.cdn_url) {
+    finalUrl = row.cdn_url
+  }
+  if (!finalSize && row.size) {
+    finalSize = row.size
   }
 
   // 2. Poster Resolution - Strictly MovieBox-first
