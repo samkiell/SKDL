@@ -69,11 +69,11 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         }
       }
 
-      const finalUrl = data?.url || externalUrl
+      const finalUrl = (data?.url && data.url !== 'undefined' && data.url !== 'null') ? data.url : externalUrl
       const finalTitle = data?.title || title || 'Media'
       const finalImdb = data?.imdb_id || externalImdb || ''
 
-      if (!finalUrl || finalUrl === 'undefined' || finalUrl === 'null') {
+      if (!finalUrl || finalUrl === 'undefined' || finalUrl === 'null' || !finalUrl.startsWith('http')) {
         throw new Error('Unable to resolve download URL. Please return to the player page and try again.')
       }
 
