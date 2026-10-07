@@ -169,10 +169,16 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
             duration_ms=elapsed_ms,
         )
 
-        await message.answer(
-            f"❌ Couldn't find or process **{intent.get('title')}**. Try a different title or check the spelling.",
-            parse_mode="Markdown",
-        )
+        msg_text = f"❌ Couldn't find **{intent.get('title')}** in the catalog."
+        if "Did you mean:" in str(exc):
+            suggestions = str(exc).split("Did you mean:")[1].strip().rstrip("?")
+            opts = [s.strip() for s in suggestions.split(",") if s.strip()]
+            if opts:
+                msg_text += f"\n\nDid you mean:\n• " + "\n• ".join(opts)
+        else:
+            msg_text += " Try checking the spelling or requesting another title."
+
+        await message.answer(msg_text, parse_mode="Markdown")
 
 
 async def _handle_download_series(message: Message, intent: dict, user_id: int, start_time: float, user_obj: any = None) -> None:
@@ -193,7 +199,15 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
         # Fetch show info to make it dynamic
         info = await get_media_info(title, is_series=True)
         if not info.get("subject_id"):
-            await message.answer(f"😕 couldn't find '{title}' on my end. try the exact title or another spelling.")
+            suggestions = info.get("suggestions", [])
+            if suggestions:
+                sugg_text = "\n• " + "\n• ".join(suggestions)
+                await message.answer(
+                    f"😕 couldn't find **{title}** in the series catalog.\n\nDid you mean one of these?{sugg_text}",
+                    parse_mode="Markdown",
+                )
+            else:
+                await message.answer(f"😕 couldn't find '{title}' on my end. try the exact title or another spelling.")
             clear_pending_request(user_id)
             return
         builder = InlineKeyboardBuilder()
@@ -322,10 +336,16 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
             duration_ms=elapsed_ms,
         )
 
-        await message.answer(
-            f"❌ Couldn't find **{intent.get('title')}** S{season}E{episode}. Check the title and episode number.",
-            parse_mode="Markdown",
-        )
+        msg_text = f"❌ Couldn't find **{intent.get('title')}** S{season}E{episode}."
+        if "Did you mean:" in str(exc):
+            suggestions = str(exc).split("Did you mean:")[1].strip().rstrip("?")
+            opts = [s.strip() for s in suggestions.split(",") if s.strip()]
+            if opts:
+                msg_text += f"\n\nDid you mean:\n• " + "\n• ".join(opts)
+        else:
+            msg_text += " Check the title and episode number."
+
+        await message.answer(msg_text, parse_mode="Markdown")
 
 
 async def _handle_bulk_series(message: Message, intent: dict, user_id: int, start_time: float, user_obj: any = None) -> None:
