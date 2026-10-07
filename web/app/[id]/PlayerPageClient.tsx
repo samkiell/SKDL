@@ -131,9 +131,6 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
                   imdbId={row.imdb_id} 
                   query={displayFilename}
                   poster={posterUrl}
-                  mediaType={row.type}
-                  season={row.season}
-                  episode={row.episode}
                   onSubtitleFound={(url) => setSubtitleUrl(url)} 
                 />
             ) : (
@@ -144,33 +141,21 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
           </div>
 
           <div className="flex flex-col items-center space-y-1 sm:space-y-2 md:space-y-6 pt-0 mt-1 sm:mt-0 md:mt-2 pb-6 md:pb-12">
-              {proxyUrl && (proxyUrl.includes('embed') || proxyUrl.includes('autoembed') || proxyUrl.includes('2embed') || proxyUrl.includes('vidsrc')) ? (
-                  <div className="w-full max-w-2xl bg-zinc-950/80 border border-white/10 rounded-2xl p-5 text-center space-y-2 shadow-xl">
-                      <div className="flex items-center justify-center gap-2 text-zinc-300 font-mono text-xs uppercase tracking-wider font-semibold">
-                          <span className="w-2 h-2 rounded-full bg-[#e8ff47] animate-pulse"></span>
-                          <span>Web Stream Player Active</span>
-                      </div>
-                      <p className="text-zinc-400 text-xs max-w-md mx-auto leading-relaxed">
-                          This title is playing directly in the high-definition player above via web mirrors. Offline file downloading (MP4 / MKV) is available for direct catalog media.
-                      </p>
-                  </div>
-              ) : (
-                  <div className="w-full max-w-2xl flex flex-col sm:flex-row gap-3 md:gap-4">
-                      <button
-                          onClick={handleDownloadMp4}
-                          className="flex-1 flex justify-center items-center bg-[#121212] border border-white/10 text-white text-xs md:text-sm font-black px-8 py-5 rounded-lg hover:bg-zinc-800 transition-all uppercase tracking-[0.2em] font-mono"
-                      >
-                          DOWNLOAD MP4
-                      </button>
+              <div className="w-full max-w-2xl flex flex-col sm:flex-row gap-3 md:gap-4">
+                  <button
+                      onClick={handleDownloadMp4}
+                      className="flex-1 flex justify-center items-center bg-[#121212] border border-white/10 text-white text-xs md:text-sm font-black px-8 py-5 rounded-lg hover:bg-zinc-800 transition-all uppercase tracking-[0.2em] font-mono"
+                  >
+                      DOWNLOAD MP4
+                  </button>
 
-                      <button
-                          onClick={handleDownloadMkv}
-                          className="flex-1 flex justify-center items-center bg-white text-black text-xs md:text-sm font-black px-8 py-5 rounded-lg hover:bg-zinc-100 transition-all uppercase tracking-[0.2em] font-mono"
-                      >
-                          DOWNLOAD MKV + SUBS
-                      </button>
-                  </div>
-              )}
+                  <button
+                      onClick={handleDownloadMkv}
+                      className="flex-1 flex justify-center items-center bg-white text-black text-xs md:text-sm font-black px-8 py-5 rounded-lg hover:bg-zinc-100 transition-all uppercase tracking-[0.2em] font-mono"
+                  >
+                      DOWNLOAD MKV + SUBS
+                  </button>
+              </div>
 
               {subtitleUrl && (
                   <div className="text-center pt-2">
