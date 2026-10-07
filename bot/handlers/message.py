@@ -153,6 +153,49 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
         clear_pending_request(user_id)
 
     except Exception as exc:
+        # Attempt Torbox Debrid cache fallback if MovieBox was unable to locate or resolve the title
+        try:
+            from services.torbox import resolve_torbox_fallback
+            torbox_result = await resolve_torbox_fallback(title)
+            if torbox_result and torbox_result.get("cdn_url"):
+                link_id = generate_id()
+                link_url = build_url(link_id)
+                await save_media(
+                    link_id=link_id,
+                    title=torbox_result["title"],
+                    cdn_url=torbox_result["cdn_url"],
+                    media_type="movie",
+                    quality=torbox_result.get("quality", "1080p"),
+                    requested_by=user_id,
+                    subject_id=None,
+                    poster_url=None,
+                    description=torbox_result.get("description", "Streamed via Torbox High-Speed Cache"),
+                    size=torbox_result.get("size", 0),
+                )
+                elapsed_ms = int((time.monotonic() - start_time) * 1000)
+                log_event(
+                    user_id=user_id,
+                    username=user.username,
+                    display_name=user.full_name,
+                    action="download_movie_torbox",
+                    query=title,
+                    result_title=torbox_result["title"],
+                    result_found=True,
+                    duration_ms=elapsed_ms,
+                )
+                reply = (
+                    f"🎬 **{torbox_result['title']} ({torbox_result['year']})**\n"
+                    f"Quality: {torbox_result['quality']} (Torbox Debrid)\n\n"
+                    f"📥 {link_url}\n"
+                    f"⏳ Link expires in 6 hours"
+                )
+                await message.answer(reply, parse_mode="Markdown")
+                add_message(user_id, "assistant", f"I found and prepared {torbox_result['title']} via Torbox Debrid: {link_url}")
+                clear_pending_request(user_id)
+                return
+        except Exception as tb_exc:
+            logger.debug("[torbox] Fallback failed for '%s': %s", title, tb_exc)
+
         logger.error("Movie download failed: %s", exc)
         elapsed_ms = int((time.monotonic() - start_time) * 1000)
         
