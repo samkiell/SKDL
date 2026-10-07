@@ -137,7 +137,8 @@ export async function getFreshCdnUrl(
   subjectId: string, 
   type: 'movie' | 'series',
   season: number = 0,
-  episode: number = 0
+  episode: number = 0,
+  quality?: string
 ): Promise<string> {
   const { downloads } = await getMovieBoxDetails(subjectId, type, season, episode)
   
@@ -145,7 +146,14 @@ export async function getFreshCdnUrl(
     throw new Error('No downloads found for this content')
   }
 
-  // Pick highest resolution available
-  const sorted = downloads.sort((a, b) => (b.resolution || 0) - (a.resolution || 0))
+  // If a specific quality is requested (e.g. "480p", "720p"), match it
+  const requestedRes = quality ? parseInt(quality.replace(/\D/g, ''), 10) : 0
+  if (requestedRes > 0) {
+    const matched = downloads.find(d => Number(d.resolution) === requestedRes)
+    if (matched?.url) return matched.url
+  }
+
+  // Fallback to highest resolution available
+  const sorted = [...downloads].sort((a, b) => (b.resolution || 0) - (a.resolution || 0))
   return sorted[0].url
 }
