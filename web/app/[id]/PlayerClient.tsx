@@ -49,6 +49,23 @@ export default function PlayerClient({ proxyUrl, imdbId, query, subjectId, type,
     fetchSubtitles()
   }, [imdbId, query, subjectId, type, season, episode, onSubtitleFound])
 
+  // Sync track visibility with state
+  useEffect(() => {
+    if (subtitleUrl && videoRef.current) {
+      const video = videoRef.current
+      const applyMode = () => {
+        if (video.textTracks && video.textTracks.length > 0) {
+          for (let i = 0; i < video.textTracks.length; i++) {
+            video.textTracks[i].mode = isCaptionsOn ? 'showing' : 'hidden'
+          }
+        }
+      }
+      applyMode()
+      const t = setTimeout(applyMode, 500)
+      return () => clearTimeout(t)
+    }
+  }, [subtitleUrl, isCaptionsOn])
+
   // Playback handlers
   const togglePlay = () => {
     if (!videoRef.current) return
@@ -60,11 +77,13 @@ export default function PlayerClient({ proxyUrl, imdbId, query, subjectId, type,
   const toggleCaptions = (e: React.MouseEvent) => {
     e.stopPropagation()
     if (!videoRef.current) return
+    const nextState = !isCaptionsOn
+    setIsCaptionsOn(nextState)
     const tracks = videoRef.current.textTracks
     if (tracks && tracks.length > 0) {
-        const nextState = !isCaptionsOn
-        tracks[0].mode = nextState ? 'showing' : 'hidden'
-        setIsCaptionsOn(nextState)
+      for (let i = 0; i < tracks.length; i++) {
+        tracks[i].mode = nextState ? 'showing' : 'hidden'
+      }
     }
   }
 
@@ -169,12 +188,13 @@ export default function PlayerClient({ proxyUrl, imdbId, query, subjectId, type,
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         playsInline
+        crossOrigin="anonymous"
       >
         {subtitleUrl && (
           <track
             key={subtitleUrl}
             kind="subtitles"
-            src={`/api/proxy?url=${encodeURIComponent(subtitleUrl || '')}`}
+            src={`/api/subtitles/vtt?url=${encodeURIComponent(subtitleUrl || '')}`}
             srcLang="en"
             label="English"
             default
