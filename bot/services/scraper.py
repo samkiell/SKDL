@@ -2,7 +2,7 @@
 scraper.py — Free web stream scraper fallback using IMDb ID resolution and universal web embed providers.
 
 Flow:
-1. When MovieBox and Torbox cannot fulfill a title, resolve IMDb ID & poster via IMDb Suggestion API.
+1. When MovieBox cannot fulfill a title, resolve IMDb ID & poster via IMDb Suggestion API.
 2. Construct embed stream URL (AutoEmbed / 2Embed) for movies and TV series.
 3. Return standardized media dictionary compatible with save_media and web player.
 """
