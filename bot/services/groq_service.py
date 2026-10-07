@@ -48,8 +48,10 @@ Talk like a real person texting: casual, sarcastic, and funny. Use lowercase, sl
 
 ## RESPONSE FORMAT (JSON)
 {
-  "title": "string | null",
+  "title": "canonical media title ONLY (e.g. 'Reacher', 'Beverly Hills Cop', 'Spider-Man: No Way Home' - strip actor names, 'by [actor]', download commands, etc.) | null",
   "is_series": false,
+  "year": number | null,
+  "imdb_id": "string | null",
   "season": number | null,
   "episode": number | null,
   "chat_response": "your personality-filled response here",
@@ -171,7 +173,8 @@ async def parse_intent(history: list[dict[str, str]], user_message: str, image_b
         return {
             "intent": intent_category,
             "title": title,
-            "year": parsed.get("year_min") or parsed.get("year_max"),
+            "year": parsed.get("year") or parsed.get("year_min") or parsed.get("year_max"),
+            "imdb_id": parsed.get("imdb_id"),
             "season": parsed.get("season"),
             "episode": parsed.get("episode"),
             "quality": parsed.get("quality") or "1080p",
