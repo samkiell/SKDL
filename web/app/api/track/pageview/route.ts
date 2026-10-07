@@ -1,26 +1,10 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { trackPageview } from '@/lib/analytics'
 
 export async function POST(req: Request) {
   try {
-    const { path, referrer, user_agent } = await req.json()
-    
-    // Extract country from Cloudflare/Railway headers
-    const country = req.headers.get('cf-ipcountry') || req.headers.get('x-forwarded-for')?.split(',')[0] || 'Unknown'
-
-    const { error } = await supabase
-      .from('page_views')
-      .insert({
-        path,
-        referrer,
-        user_agent,
-        country
-      })
-
-    if (error) {
-      console.error('Error tracking pageview:', error)
-    }
-
+    const { path } = await req.json()
+    await trackPageview(typeof path === 'string' ? path : '/')
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('Track pageview exception:', err)
