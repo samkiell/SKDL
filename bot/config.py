@@ -22,7 +22,6 @@ class Settings:
     MOVIEBOX_API_HOST_V2: str
     MOVIEBOX_DOWNLOAD_API_HOST: str
     OPENSUBTITLES_API_KEY: str | None = None
-    TORBOX_API_KEY: str | None = None
     GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     @classmethod
@@ -58,7 +57,6 @@ class Settings:
             MOVIEBOX_API_HOST_V2=mb_api_host,
             MOVIEBOX_DOWNLOAD_API_HOST=os.getenv("MOVIEBOX_DOWNLOAD_API_HOST", "h5.aoneroom.com"),
             OPENSUBTITLES_API_KEY=os.getenv("OPENSUBTITLES_API_KEY"),
-            TORBOX_API_KEY=os.getenv("TORBOX_API_KEY"),
             GROQ_MODEL=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
         )
 
