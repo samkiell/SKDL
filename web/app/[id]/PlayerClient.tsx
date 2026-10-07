@@ -6,11 +6,15 @@ interface PlayerClientProps {
   proxyUrl: string
   imdbId?: string
   query?: string
+  subjectId?: string
+  type?: string
+  season?: number | null
+  episode?: number | null
   poster?: string
   onSubtitleFound?: (url: string) => void
 }
 
-export default function PlayerClient({ proxyUrl, imdbId, query, poster, onSubtitleFound }: PlayerClientProps) {
+export default function PlayerClient({ proxyUrl, imdbId, query, subjectId, type, season, episode, poster, onSubtitleFound }: PlayerClientProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -25,6 +29,10 @@ export default function PlayerClient({ proxyUrl, imdbId, query, poster, onSubtit
     const fetchSubtitles = async () => {
       try {
         const url = new URL('/api/subtitles', window.location.origin)
+        if (subjectId) url.searchParams.set('subject_id', subjectId)
+        if (type) url.searchParams.set('type', type)
+        if (season !== undefined && season !== null) url.searchParams.set('season', String(season))
+        if (episode !== undefined && episode !== null) url.searchParams.set('episode', String(episode))
         if (imdbId) url.searchParams.set('imdb_id', imdbId)
         if (query) url.searchParams.set('query', query)
 
@@ -39,7 +47,7 @@ export default function PlayerClient({ proxyUrl, imdbId, query, poster, onSubtit
       }
     }
     fetchSubtitles()
-  }, [imdbId, query, onSubtitleFound])
+  }, [imdbId, query, subjectId, type, season, episode, onSubtitleFound])
 
   // Playback handlers
   const togglePlay = () => {
