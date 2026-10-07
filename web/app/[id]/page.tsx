@@ -255,21 +255,7 @@ export default async function LinkPage({
       finalPoster = fallbackPoster
   }
 
-  // Auto-heal dead player.autoembed.cc embeds to vidsrc.me
-  if (finalUrl && finalUrl.includes('player.autoembed.cc')) {
-    const imdbMatch = finalUrl.match(/(tt\d+)/) || (row.imdb_id ? [null, row.imdb_id] : null)
-    if (imdbMatch && imdbMatch[1]) {
-      const imdbId = imdbMatch[1]
-      if (row.type === 'series' && row.season && row.episode) {
-        finalUrl = `https://vidsrc.me/embed/tv?imdb=${imdbId}&season=${row.season}&episode=${row.episode}`
-      } else {
-        finalUrl = `https://vidsrc.me/embed/movie?imdb=${imdbId}`
-      }
-    }
-  }
-
-  const isEmbedUrl = Boolean(finalUrl && (finalUrl.includes('embed') || finalUrl.includes('autoembed') || finalUrl.includes('2embed') || finalUrl.includes('vidsrc')))
-  const proxyUrl = isEmbedUrl ? finalUrl : `/api/proxy?url=${encodeURIComponent(finalUrl)}`
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}`
   
   // Pass metadata to the client
   const rowForClient = {
