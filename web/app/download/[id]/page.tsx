@@ -121,31 +121,32 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
               console.warn('Subtitle resolution skipped for mux:', subErr)
             }
             
+            fetch('/api/track/download', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                media_id: id,
+                title: finalTitle,
+                media_type: data.type || 'series',
+                format: 'mkv'
+              }),
+              keepalive: true
+            }).catch(() => {})
+
             if (subtitleUrl) {
               const muxUrl = `/api/mux?videoUrl=${encodeURIComponent(finalUrl)}&subtitleUrl=${encodeURIComponent(subtitleUrl)}&filename=${encodeURIComponent(brandedFilename)}`
-              
-              fetch('/api/track/download', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  media_id: id,
-                  title: finalTitle,
-                  media_type: data.type || 'series',
-                  format: 'mkv'
-                }),
-                keepalive: true
-              }).catch(() => {})
-
               window.location.href = muxUrl
             } else {
-              // Direct stream download if subtitles are unavailable
-              const downloadName = `${brandedFilename}.mp4`
+              // Direct stream download with .mkv extension if subtitles are unavailable
+              const downloadName = `${brandedFilename}.mkv`
               const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(downloadName)}&dl=1`
               window.location.href = proxyUrl
             }
         } catch (err) {
-            console.error('MKV Muxing failed:', err)
-            setError('Failed to mux MKV. Please try MP4 instead.')
+            console.error('MKV preparation failed, falling back to direct stream:', err)
+            const fallbackName = `${brandedFilename}.mkv`
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(fallbackName)}&dl=1`
+            window.location.href = proxyUrl
         } finally {
             setTimeout(() => {
                 setIsMuxing(false)
