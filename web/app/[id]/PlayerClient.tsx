@@ -146,6 +146,22 @@ export default function PlayerClient({ proxyUrl, imdbId, query, poster, onSubtit
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isPlaying, isCaptionsOn])
 
+  const isEmbed = proxyUrl.includes('embed') || proxyUrl.includes('player.autoembed') || proxyUrl.includes('2embed') || proxyUrl.includes('vidsrc')
+
+  if (isEmbed) {
+    return (
+      <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+        <iframe
+          title="Video Player"
+          src={proxyUrl}
+          className="w-full h-full border-0"
+          allowFullScreen
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        />
+      </div>
+    )
+  }
+
   return (
     <div 
         className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl group cursor-pointer"
