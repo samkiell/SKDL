@@ -46,12 +46,15 @@ export async function GET(
       }
     }
 
+    const resolvedUrl = (finalUrl && finalUrl !== 'undefined' && finalUrl !== 'null') ? finalUrl : row.cdn_url
+
     return NextResponse.json({ 
-      url: finalUrl || row.cdn_url,
+      url: resolvedUrl || '',
       title: row.title,
       type: row.type,
       season: row.season,
       episode: row.episode,
+      quality: row.quality || '1080p',
       imdb_id: (row as any).imdb_id || null,
       size: (row as any).size || null,
       subject_id: row.subject_id || null,
