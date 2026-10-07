@@ -255,7 +255,8 @@ export default async function LinkPage({
       finalPoster = fallbackPoster
   }
 
-  const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}`
+  const isEmbedUrl = Boolean(finalUrl && (finalUrl.includes('embed') || finalUrl.includes('autoembed') || finalUrl.includes('2embed') || finalUrl.includes('vidsrc')))
+  const proxyUrl = isEmbedUrl ? finalUrl : `/api/proxy?url=${encodeURIComponent(finalUrl)}`
   
   // Pass metadata to the client
   const rowForClient = {
