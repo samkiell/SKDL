@@ -111,7 +111,16 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         try {
             let subtitleUrl = ''
             try {
-              const subRes = await fetch(`/api/subtitles?query=${encodeURIComponent(displayFilename)}&imdb_id=${finalImdb}`)
+              const subParams = new URLSearchParams()
+              const subjectId = data?.subject_id || searchParams.get('subject_id')
+              if (subjectId) subParams.set('subject_id', subjectId)
+              if (data?.type) subParams.set('type', data.type)
+              if (data?.season) subParams.set('season', String(data.season))
+              if (data?.episode) subParams.set('episode', String(data.episode))
+              if (finalImdb) subParams.set('imdb_id', finalImdb)
+              subParams.set('query', displayFilename)
+
+              const subRes = await fetch(`/api/subtitles?${subParams.toString()}`)
               if (subRes.ok) {
                 const subData = await subRes.json()
                 if (subData.found && subData.subtitleUrl) {
