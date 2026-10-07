@@ -23,6 +23,26 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
+def format_size(size_bytes: int | float | None) -> str:
+    """Format bytes to human-readable size string (e.g. 2.9 GB, 636 MB)."""
+    if not size_bytes:
+        return ""
+    try:
+        b = float(size_bytes)
+        if b <= 0:
+            return ""
+        if b >= 1024 ** 3:
+            return f"{b / (1024 ** 3):.1f} GB"
+        if b >= 1024 ** 2:
+            return f"{b / (1024 ** 2):.0f} MB"
+        if b >= 1024:
+            return f"{b / 1024:.0f} KB"
+        return f"{int(b)} B"
+    except Exception:
+        return ""
+
+
+
 @router.message(Command("movie"))
 async def cmd_movie(message: Message) -> None:
     """Handle /movie <title> — direct movie search and download."""
@@ -72,9 +92,11 @@ async def cmd_movie(message: Message) -> None:
             duration_ms=elapsed_ms,
         )
 
+        size_str = format_size(result.get("size"))
+        quality_line = f"{result['quality']} • {size_str}" if size_str else result["quality"]
         reply = (
             f"🎬 **{result['title']} ({result['year']})**\n"
-            f"Quality: {result['quality']}\n\n"
+            f"Quality: {quality_line}\n\n"
             f"📥 {link_url}\n"
             f"⏳ Link expires in 6 hours"
         )
