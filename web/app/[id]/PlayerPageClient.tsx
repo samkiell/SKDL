@@ -60,7 +60,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
   }
 
   const handleDownloadMkv = () => {
-    const url = `/download/${row.id}?type=mkv&title=${encodeURIComponent(row.title)}&poster=${encodeURIComponent(posterUrl || '')}&url=${encodeURIComponent(row.cdn_url || '')}&imdb_id=${encodeURIComponent(row.imdb_id || '')}`
+    const url = `/download/${row.id}?type=mkv&title=${encodeURIComponent(row.title)}&poster=${encodeURIComponent(posterUrl || '')}&url=${encodeURIComponent(row.cdn_url || '')}&imdb_id=${encodeURIComponent(row.imdb_id || '')}&subject_id=${encodeURIComponent(row.subject_id || '')}`
     window.location.href = url
   }
 
@@ -130,6 +130,10 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
                   proxyUrl={proxyUrl} 
                   imdbId={row.imdb_id} 
                   query={displayFilename}
+                  subjectId={row.subject_id}
+                  type={row.type}
+                  season={row.season}
+                  episode={row.episode}
                   poster={posterUrl}
                   onSubtitleFound={(url) => setSubtitleUrl(url)} 
                 />
