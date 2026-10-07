@@ -86,11 +86,11 @@ async def search_free_scraper(
         year = target_item.get("y") or 2026
         poster_url = target_item.get("i", {}).get("imageUrl")
 
-        # Construct stream embed URL
+        # Construct stream embed URL (using reliable provider vidsrc.me)
         if is_series:
-            embed_url = f"https://player.autoembed.cc/embed/tv/{imdb_id}/{season}/{episode}"
+            embed_url = f"https://vidsrc.me/embed/tv?imdb={imdb_id}&season={season}&episode={episode}"
         else:
-            embed_url = f"https://player.autoembed.cc/embed/movie/{imdb_id}"
+            embed_url = f"https://vidsrc.me/embed/movie?imdb={imdb_id}"
 
         logger.info("[scraper] Successfully resolved free stream for '%s' -> %s (%s)", title, canonical_title, imdb_id)
 
