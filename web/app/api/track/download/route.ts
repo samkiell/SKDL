@@ -1,23 +1,10 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { trackDownload } from '@/lib/analytics'
 
 export async function POST(req: Request) {
   try {
-    const { media_id, title, media_type, format } = await req.json()
-
-    const { error } = await supabase
-      .from('download_events')
-      .insert({
-        media_id,
-        title,
-        media_type,
-        format
-      })
-
-    if (error) {
-      console.error('Error tracking download:', error)
-    }
-
+    const { title, media_type, format } = await req.json()
+    await trackDownload({ title, media_type, format })
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('Track download exception:', err)
