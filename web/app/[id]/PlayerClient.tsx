@@ -1,16 +1,28 @@
 "use client"
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 
 interface PlayerClientProps {
   proxyUrl: string
   imdbId?: string
   query?: string
   poster?: string
+  mediaType?: 'movie' | 'series'
+  season?: number | null
+  episode?: number | null
   onSubtitleFound?: (url: string) => void
 }
 
-export default function PlayerClient({ proxyUrl, imdbId, query, poster, onSubtitleFound }: PlayerClientProps) {
+export default function PlayerClient({ 
+  proxyUrl, 
+  imdbId, 
+  query, 
+  poster, 
+  mediaType,
+  season,
+  episode,
+  onSubtitleFound 
+}: PlayerClientProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -146,18 +158,86 @@ export default function PlayerClient({ proxyUrl, imdbId, query, poster, onSubtit
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isPlaying, isCaptionsOn])
 
-  const isEmbed = proxyUrl.includes('embed') || proxyUrl.includes('player.autoembed') || proxyUrl.includes('2embed') || proxyUrl.includes('vidsrc')
+  const isEmbed = proxyUrl.includes('embed') || proxyUrl.includes('autoembed') || proxyUrl.includes('2embed') || proxyUrl.includes('vidsrc')
+  const effectiveImdb = imdbId || proxyUrl.match(/(tt\d+)/)?.[1]
+  const [activeServerIndex, setActiveServerIndex] = useState(0)
+
+  const serverList = useMemo(() => {
+    if (!effectiveImdb) {
+      const sanitized = proxyUrl.includes('player.autoembed.cc')
+        ? proxyUrl.replace('player.autoembed.cc', 'autoembed.co')
+        : proxyUrl
+      return [{ name: 'Server 1', url: sanitized }]
+    }
+
+    const isSeries = mediaType === 'series' && Boolean(season && episode)
+    return [
+      {
+        name: 'VidSrc',
+        url: isSeries
+          ? `https://vidsrc.me/embed/tv?imdb=${effectiveImdb}&season=${season}&episode=${episode}`
+          : `https://vidsrc.me/embed/movie?imdb=${effectiveImdb}`
+      },
+      {
+        name: 'AutoEmbed',
+        url: isSeries
+          ? `https://autoembed.co/tv/imdb/${effectiveImdb}-${season}-${episode}`
+          : `https://autoembed.co/movie/imdb/${effectiveImdb}`
+      },
+      {
+        name: '2Embed',
+        url: isSeries
+          ? `https://www.2embed.cc/embedtv/${effectiveImdb}&s=${season}&e=${episode}`
+          : `https://www.2embed.cc/embed/${effectiveImdb}`
+      },
+      {
+        name: 'VidSrc.to',
+        url: isSeries
+          ? `https://vidsrc.to/embed/tv/${effectiveImdb}/${season}/${episode}`
+          : `https://vidsrc.to/embed/movie/${effectiveImdb}`
+      }
+    ]
+  }, [effectiveImdb, mediaType, season, episode, proxyUrl])
+
+  const currentEmbedUrl = serverList[activeServerIndex]?.url || serverList[0]?.url || proxyUrl
 
   if (isEmbed) {
     return (
-      <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
-        <iframe
-          title="Video Player"
-          src={proxyUrl}
-          className="w-full h-full border-0"
-          allowFullScreen
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        />
+      <div className="space-y-3">
+        {serverList.length > 1 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500 font-bold">SOURCE SERVER:</span>
+              <div className="flex items-center gap-1.5 bg-[#121212] p-1 rounded-lg border border-white/10">
+                {serverList.map((srv, idx) => (
+                  <button
+                    key={srv.name}
+                    type="button"
+                    onClick={() => setActiveServerIndex(idx)}
+                    className={`px-2.5 py-1 text-[11px] font-mono uppercase rounded transition-all ${
+                      activeServerIndex === idx
+                        ? 'bg-white text-black font-bold shadow-sm'
+                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    {srv.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <span className="text-[10px] font-mono text-zinc-500 hidden sm:inline">Switch server if stream fails</span>
+          </div>
+        )}
+        <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+          <iframe
+            key={currentEmbedUrl}
+            title="Video Player"
+            src={currentEmbedUrl}
+            className="w-full h-full border-0"
+            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          />
+        </div>
       </div>
     )
   }
