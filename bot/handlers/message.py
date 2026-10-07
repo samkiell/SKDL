@@ -44,6 +44,25 @@ Just tell me what you want to watch in plain English!
 I'll find it, generate a download link, and send it to you! 🍿"""
 
 
+def format_size(size_bytes: int | float | None) -> str:
+    """Format bytes to human-readable size string (e.g. 2.9 GB, 636 MB)."""
+    if not size_bytes:
+        return ""
+    try:
+        b = float(size_bytes)
+        if b <= 0:
+            return ""
+        if b >= 1024 ** 3:
+            return f"{b / (1024 ** 3):.1f} GB"
+        if b >= 1024 ** 2:
+            return f"{b / (1024 ** 2):.0f} MB"
+        if b >= 1024:
+            return f"{b / 1024:.0f} KB"
+        return f"{int(b)} B"
+    except Exception:
+        return ""
+
+
 async def _present_quality_options(message: Message, intent: dict, user_id: int) -> bool:
     """Returns True if presented, False if skipped (no options/already chose)."""
     if intent.get("_quality_selected"):
@@ -64,8 +83,9 @@ async def _present_quality_options(message: Message, intent: dict, user_id: int)
 
     builder = InlineKeyboardBuilder()
     for q in qualities[:5]:
-        mb_size = q['size'] // 1024 // 1024
-        builder.button(text=f"🎬 {q['label']} ({mb_size}MB)", callback_data=f"q:{q['label']}")
+        size_label = format_size(q.get("size"))
+        btn_text = f"🎬 {q['label']} ({size_label})" if size_label else f"🎬 {q['label']}"
+        builder.button(text=btn_text, callback_data=f"q:{q['label']}")
 
     builder.adjust(1)
     
@@ -130,9 +150,11 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
             duration_ms=elapsed_ms,
             )
 
+        size_str = format_size(result.get("size"))
+        quality_line = f"{result['quality']} • {size_str}" if size_str else result["quality"]
         reply = (
             f"🎬 **{result['title']} ({result['year']})**\n"
-            f"Quality: {result['quality']}\n\n"
+            f"Quality: {quality_line}\n\n"
             f"📥 {link_url}\n"
             f"⏳ Link expires in 6 hours"
         )
@@ -298,9 +320,11 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
             duration_ms=elapsed_ms,
         )
 
+        size_str = format_size(result.get("size"))
+        quality_line = f"{result['quality']} • {size_str}" if size_str else result["quality"]
         reply = (
             f"📺 **{result['title']} S{result['season']}E{result['episode']}**\n"
-            f"Quality: {result['quality']}\n\n"
+            f"Quality: {quality_line}\n\n"
             f"📥 {link_url}\n"
             f"⏳ Link expires in 6 hours"
         )
