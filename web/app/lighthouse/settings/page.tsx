@@ -101,6 +101,51 @@ export default function SettingsPage() {
                  <div className={`absolute top-1 w-5 h-5 rounded-full transition-all duration-500 ${settings.ads_enabled === 'true' ? 'left-8 bg-black' : 'left-1 bg-zinc-700'}`} />
                </button>
             </div>
+
+            <div className="space-y-4 pt-4 border-t border-white/5">
+               <div className="flex items-center justify-between">
+                 <p className="text-sm font-bold text-white tracking-tight">Banner Ad Tag</p>
+                 {saving === 'adsterra_banner_tag' && <span className="text-[8px] font-mono text-white animate-pulse uppercase">Saving...</span>}
+               </div>
+               <textarea
+                 rows={3}
+                 placeholder="Paste Adsterra banner HTML tag or invoke script..."
+                 defaultValue={settings.adsterra_banner_tag || ''}
+                 onBlur={(e) => updateSetting('adsterra_banner_tag', e.target.value)}
+                 className="w-full bg-black/50 border border-white/5 rounded-xl px-6 py-4 text-xs font-mono text-zinc-400 focus:outline-none focus:border-white/20 transition-all resize-y"
+               />
+               <p className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">HTML / Script snippet for 728x90 and 300x250 placements</p>
+            </div>
+
+            <div className="space-y-4">
+               <div className="flex items-center justify-between">
+                 <p className="text-sm font-bold text-white tracking-tight">Social Bar Script URL</p>
+                 {saving === 'adsterra_social_bar' && <span className="text-[8px] font-mono text-white animate-pulse uppercase">Saving...</span>}
+               </div>
+               <input
+                 type="text"
+                 placeholder="E.g. https://pl29046630.profitablecpmratenetwork.com/.../invoke.js"
+                 defaultValue={settings.adsterra_social_bar || ''}
+                 onBlur={(e) => updateSetting('adsterra_social_bar', e.target.value)}
+                 className="w-full bg-black/50 border border-white/5 rounded-xl px-6 py-4 text-xs font-mono text-zinc-400 focus:outline-none focus:border-white/20 transition-all"
+               />
+               <p className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">Floating social push notification ad script</p>
+            </div>
+
+            <div className="space-y-4">
+               <div className="flex items-center justify-between">
+                 <p className="text-sm font-bold text-white tracking-tight">Popunder Script Code / URL</p>
+                 {saving === 'adsterra_popunder' && <span className="text-[8px] font-mono text-white animate-pulse uppercase">Saving...</span>}
+               </div>
+               <input
+                 type="text"
+                 placeholder="E.g. <script src='https://...'></script> or direct script URL"
+                 defaultValue={settings.adsterra_popunder || ''}
+                 onBlur={(e) => updateSetting('adsterra_popunder', e.target.value)}
+                 className="w-full bg-black/50 border border-white/5 rounded-xl px-6 py-4 text-xs font-mono text-zinc-400 focus:outline-none focus:border-white/20 transition-all"
+               />
+               <p className="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">Background popunder ad trigger</p>
+            </div>
           </div>
         </section>
 
