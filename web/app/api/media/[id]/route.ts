@@ -38,7 +38,8 @@ export async function GET(
           row.subject_id,
           row.type,
           row.season || 0,
-          row.episode || 0
+          row.episode || 0,
+          row.quality
         )
       } catch (e) {
         console.error('Failed to refresh CDN URL for download page:', e)
