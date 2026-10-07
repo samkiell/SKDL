@@ -92,17 +92,38 @@ def _pick_best(items, query: str):
         t = _norm_title(getattr(item, "title", ""))
         if not t:
             continue
-        score = difflib.SequenceMatcher(None, q, t).ratio()
-        if q_tokens and q_tokens.issubset(set(t.split())):
-            score = max(score, 0.9)
         if t == q:
-            score = 1.0
+            return item
+        score = difflib.SequenceMatcher(None, q, t).ratio()
+        if len(q_tokens) >= 2 and q_tokens.issubset(set(t.split())):
+            score = max(score, 0.9)
         if score > best_score:
             best, best_score = item, score
     if best is not None and best_score >= 0.85:
         return best
     logger.info("No confident match for '%s' (best score %.2f)", query, best_score)
     return None
+
+
+def get_close_suggestions(items, query: str, limit: int = 3) -> list[str]:
+    """Return friendly names of top candidates from search items."""
+    q = _norm_title(query)
+    q_tokens = set(q.split())
+    suggestions = []
+    seen = set()
+    for item in items or []:
+        t_raw = getattr(item, "title", "")
+        t = _norm_title(t_raw)
+        if not t or t in seen:
+            continue
+        score = difflib.SequenceMatcher(None, q, t).ratio()
+        if (q_tokens and q_tokens.intersection(set(t.split()))) or score >= 0.4:
+            year = getattr(getattr(item, "releaseDate", None), "year", "")
+            label = f"{t_raw} ({year})" if year else t_raw
+            suggestions.append((score, label))
+            seen.add(t)
+    suggestions.sort(key=lambda x: x[0], reverse=True)
+    return [s[1] for s in suggestions[:limit]]
 
 
 def _resolve_sdk_media_file(downloadable, quality: str):
@@ -141,7 +162,9 @@ async def get_movie(title: str, quality: str = "1080p") -> dict:
 
         target = _pick_best(search_results.items, title)
         if target is None:
-            raise RuntimeError(f"No results found for '{title}'")
+            suggestions = get_close_suggestions(search_results.items, title)
+            suffix = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
+            raise RuntimeError(f"No results found for '{title}'.{suffix}")
 
         # Step 2: Resolve download metadata via SDK only.
         detail = DownloadableMovieFilesDetail(session, target)
@@ -234,7 +257,9 @@ async def get_episode(
 
             target = _pick_best(search_results.items, title)
             if target is None:
-                raise RuntimeError(f"No series results found for '{title}'")
+                suggestions = get_close_suggestions(search_results.items, title)
+                suffix = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
+                raise RuntimeError(f"No series results found for '{title}'.{suffix}")
 
         # Step 2: Resolve episode download metadata via SDK only.
         detail = DownloadableTVSeriesFilesDetail(session, target)
@@ -347,7 +372,8 @@ async def get_media_info(title: str, is_series: bool) -> dict:
         results = await search.get_content_model()
         target = _pick_best(results.items, title)
         if target is None:
-            return {"title": title, "year": "Unknown"}
+            suggestions = get_close_suggestions(results.items, title)
+            return {"title": title, "year": "Unknown", "suggestions": suggestions}
         # Return dict with common metadata
         return {
             "title": target.title,
