@@ -4,7 +4,7 @@ import { useState, useEffect, use, useRef, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import AdBanner from '../../components/AdBanner'
 import Link from 'next/link'
-import { ArrowLeft, Clock, ShieldCheck, Download, AlertCircle, Loader2, Play } from 'lucide-react'
+import { ArrowLeft, Clock, ShieldCheck, Download, AlertCircle, Loader2 } from 'lucide-react'
 
 export default function DownloadPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -83,12 +83,6 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         : safeFilename
       const brandedFilename = displayFilename + ' - SKDL (skdlm.vercel.app)'
 
-      const isEmbed = Boolean(finalUrl && (finalUrl.includes('embed') || finalUrl.includes('autoembed') || finalUrl.includes('2embed') || finalUrl.includes('vidsrc')))
-      if (isEmbed) {
-        setError('This title is provided via Web Stream Mirror for browser playback. Offline downloading (MP4 / MKV) is unavailable for web mirror streams.')
-        setLoading(false)
-        return
-      }
 
       if (data.type === 'srt' || type === 'srt') {
          const downloadName = `${brandedFilename}.srt`
@@ -315,23 +309,11 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
                     </button>
 
                     {error && (
-                        <div className="flex flex-col items-center justify-center gap-3 p-5 bg-red-500/10 border border-red-500/20 rounded-2xl text-center">
-                            <div className="flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4 text-red-400" />
-                                <p className="text-red-400 text-xs font-mono uppercase tracking-wider font-semibold">
-                                    Download Notice
-                                </p>
-                            </div>
-                            <p className="text-zinc-300 text-xs max-w-sm leading-relaxed">
+                        <div className="flex items-center justify-center gap-2 p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                            <p className="text-red-500 text-[10px] font-mono uppercase tracking-widest">
                                 {error}
                             </p>
-                            <Link
-                                href={`/${id}`}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-black hover:bg-[#e8ff47] text-xs font-mono uppercase tracking-widest font-bold rounded-xl transition-all shadow-md mt-1"
-                            >
-                                <Play className="w-3.5 h-3.5 fill-black" />
-                                <span>Watch on Web Player</span>
-                            </Link>
                         </div>
                     )}
                 </div>
