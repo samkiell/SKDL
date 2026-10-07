@@ -196,6 +196,50 @@ async def _handle_download_movie(message: Message, intent: dict, user_id: int, s
         except Exception as tb_exc:
             logger.debug("[torbox] Fallback failed for '%s': %s", title, tb_exc)
 
+        # Attempt Free Web Stream Scraper fallback
+        try:
+            from services.scraper import search_free_scraper
+            free_result = await search_free_scraper(title, is_series=False)
+            if free_result and free_result.get("cdn_url"):
+                link_id = generate_id()
+                link_url = build_url(link_id)
+                await save_media(
+                    link_id=link_id,
+                    title=free_result["title"],
+                    cdn_url=free_result["cdn_url"],
+                    media_type="movie",
+                    quality=free_result.get("quality", "HD Web Stream"),
+                    requested_by=user_id,
+                    subject_id=None,
+                    imdb_id=free_result.get("imdb_id"),
+                    poster_url=free_result.get("poster_url"),
+                    description=free_result.get("description", "Streamed via Free Web Stream Provider"),
+                    size=0,
+                )
+                elapsed_ms = int((time.monotonic() - start_time) * 1000)
+                log_event(
+                    user_id=user_id,
+                    username=user.username,
+                    display_name=user.full_name,
+                    action="download_movie_scraper",
+                    query=title,
+                    result_title=free_result["title"],
+                    result_found=True,
+                    duration_ms=elapsed_ms,
+                )
+                reply = (
+                    f"🎬 **{free_result['title']} ({free_result['year']})**\n"
+                    f"Quality: HD Web Stream\n\n"
+                    f"📥 {link_url}\n"
+                    f"⏳ Link expires in 6 hours"
+                )
+                await message.answer(reply, parse_mode="Markdown")
+                add_message(user_id, "assistant", f"I found and prepared {free_result['title']} via Web Stream: {link_url}")
+                clear_pending_request(user_id)
+                return
+        except Exception as sc_exc:
+            logger.debug("[scraper] Fallback failed for '%s': %s", title, sc_exc)
+
         logger.error("Movie download failed: %s", exc)
         elapsed_ms = int((time.monotonic() - start_time) * 1000)
         
@@ -364,6 +408,52 @@ async def _handle_download_series(message: Message, intent: dict, user_id: int, 
         clear_pending_request(user_id)
 
     except Exception as exc:
+        # Attempt Free Web Stream Scraper fallback for series episode
+        try:
+            from services.scraper import search_free_scraper
+            free_result = await search_free_scraper(title, is_series=True, season=season or 1, episode=episode or 1)
+            if free_result and free_result.get("cdn_url"):
+                link_id = generate_id()
+                link_url = build_url(link_id)
+                await save_media(
+                    link_id=link_id,
+                    title=f"{free_result['title']} S{season}E{episode}",
+                    cdn_url=free_result["cdn_url"],
+                    media_type="series",
+                    season=season,
+                    episode=episode,
+                    quality=free_result.get("quality", "HD Web Stream"),
+                    requested_by=user_id,
+                    subject_id=None,
+                    imdb_id=free_result.get("imdb_id"),
+                    poster_url=free_result.get("poster_url"),
+                    description=free_result.get("description", "Streamed via Free Web Stream Provider"),
+                    size=0,
+                )
+                elapsed_ms = int((time.monotonic() - start_time) * 1000)
+                log_event(
+                    user_id=user_id,
+                    username=user.username,
+                    display_name=user.full_name,
+                    action="download_series_scraper",
+                    query=f"{title} S{season}E{episode}",
+                    result_title=free_result["title"],
+                    result_found=True,
+                    duration_ms=elapsed_ms,
+                )
+                reply = (
+                    f"📺 **{free_result['title']} S{season}E{episode}**\n"
+                    f"Quality: HD Web Stream\n\n"
+                    f"📥 {link_url}\n"
+                    f"⏳ Link expires in 6 hours"
+                )
+                await message.answer(reply, parse_mode="Markdown")
+                add_message(user_id, "assistant", f"I found and prepared {free_result['title']} S{season}E{episode} via Web Stream: {link_url}")
+                clear_pending_request(user_id)
+                return
+        except Exception as sc_exc:
+            logger.debug("[scraper] Series fallback failed for '%s': %s", title, sc_exc)
+
         logger.error("Series download failed: %s", exc)
         elapsed_ms = int((time.monotonic() - start_time) * 1000)
         is_not_found = "No series results found" in str(exc) or "No results found" in str(exc) or "Could not resolve" in str(exc)
