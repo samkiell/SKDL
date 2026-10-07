@@ -70,21 +70,65 @@ export async function generateMetadata({
   }
 }
 
-function ExpiredPage({ title }: { title: string }) {
+function ExpiredPage({ 
+  title, 
+  type = 'movie', 
+  season, 
+  episode 
+}: { 
+  title: string
+  type?: string
+  season?: number | null
+  episode?: number | null 
+}) {
+  const isSeries = type === 'series'
+  const displayTitle = isSeries && season && episode 
+    ? `${title} S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`
+    : title
+
+  const telegramMsg = isSeries && season && episode
+    ? `hey, can I get ${title} Season ${season} Episode ${episode}`
+    : `hey, can I get ${title}`
+
+  const tgUrl = `https://t.me/SK_DLBOT?text=${encodeURIComponent(telegramMsg)}`
+
   return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center px-4 md:px-6 font-sans text-white">
-      <div className="text-center w-full max-w-md border border-white/10 p-8 rounded-xl bg-[#0a0a0a]">
-        <div className="text-3xl mb-4 text-zinc-500">⏳</div>
-        <h1 className="text-xl font-medium mb-2">{title}</h1>
-        <p className="text-sm text-zinc-400 mb-8 font-mono">LINK_EXPIRED_OR_INVALID</p>
-        <a
-          href={`https://t.me/SK_DLBOT?text=${encodeURIComponent(`hey i would like to download ${title}`)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full bg-white text-black text-sm font-bold px-6 py-3.5 rounded-md hover:bg-zinc-200 transition-colors uppercase tracking-wider"
-        >
-          Request Again on Telegram
-        </a>
+      <div className="text-center w-full max-w-md border border-white/10 p-8 rounded-2xl bg-[#080808] shadow-2xl relative overflow-hidden group">
+        <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+        
+        <div className="relative z-10 space-y-6">
+          <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto transition-transform group-hover:scale-110 duration-500">
+            <svg className="w-8 h-8 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-2xl font-space font-bold tracking-tighter text-white uppercase">Link Expired</h1>
+            <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-[0.4em] font-black">Error 410 // Transmission_Expired</p>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-sm text-zinc-300 font-bold max-w-xs mx-auto">
+              {displayTitle}
+            </p>
+            <p className="text-xs text-zinc-500 font-mono leading-relaxed max-w-xs mx-auto">
+              This transmission ID has expired. Tap below to request fresh streaming and download links from the bot.
+            </p>
+          </div>
+
+          <div className="pt-4">
+            <a
+              href={tgUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full bg-white text-black text-[11px] font-black px-6 py-4 rounded-xl hover:bg-zinc-200 transition-all uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+            >
+              Request Again on Telegram
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -111,6 +155,27 @@ export default async function LinkPage({
 
   if (!data) {
     console.log('Record not found in Redis for id:', id)
+    // Check if long-lived metadata exists to show specific expired title
+    try {
+      const redis = getRedisClient()
+      const meta = await redis.get<any>(`media:meta:${id}`)
+      if (meta?.title) {
+        return <ExpiredPage title={meta.title} type={meta.type} season={meta.season} episode={meta.episode} />
+      }
+
+      const recentList = await redis.lrange('media:recent', 0, 100)
+      for (const itemStr of recentList) {
+        try {
+          const parsed = typeof itemStr === 'string' ? JSON.parse(itemStr) : itemStr
+          if (parsed?.id === id && parsed?.title) {
+            return <ExpiredPage title={parsed.title} type={parsed.type} season={parsed.season} episode={parsed.episode} />
+          }
+        } catch {}
+      }
+    } catch (e) {
+      console.error('Fallback lookup failed:', e)
+    }
+
     notFound()
   }
 
@@ -119,7 +184,7 @@ export default async function LinkPage({
   const now = new Date()
 
   if (expiresAt < now) {
-    return <ExpiredPage title={row.title} />
+    return <ExpiredPage title={row.title} type={row.type} season={row.season} episode={row.episode} />
   }
 
   let finalUrl = row.cdn_url
