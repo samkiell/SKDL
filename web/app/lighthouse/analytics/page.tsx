@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { getTrafficStats } from '@/lib/analytics'
 import { 
   Users, 
   Download, 
@@ -27,52 +27,16 @@ export default async function AnalyticsPage() {
     redirect('/lighthouse/login')
   }
 
-  const now = new Date().toISOString()
-  const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const last7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const last30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-
-  // Fetch all data in parallel
-  const [
-    visits24h, visits7d, visits30d,
-    downloads24h, downloads7d, downloads30d,
-    dailyVisits, topPages, topDownloads,
-    formatBreakdown, typeBreakdown
-  ] = await Promise.all([
-    // Counts
-    supabase.from('page_views').select('*', { count: 'exact', head: true }).gt('created_at', last24h),
-    supabase.from('page_views').select('*', { count: 'exact', head: true }).gt('created_at', last7d),
-    supabase.from('page_views').select('*', { count: 'exact', head: true }).gt('created_at', last30d),
-    
-    supabase.from('download_events').select('*', { count: 'exact', head: true }).gt('created_at', last24h),
-    supabase.from('download_events').select('*', { count: 'exact', head: true }).gt('created_at', last7d),
-    supabase.from('download_events').select('*', { count: 'exact', head: true }).gt('created_at', last30d),
-
-    // Views
-    supabase.from('daily_visits').select('*').order('day', { ascending: true }),
-    supabase.from('top_pages').select('*'),
-    supabase.from('top_downloads').select('*'),
-
-    // Grouping
-    supabase.from('download_events').select('format').then(({ data }) => {
-        const counts: Record<string, number> = {}
-        data?.forEach(d => { counts[d.format] = (counts[d.format] || 0) + 1 })
-        return counts
-    }),
-    supabase.from('download_events').select('media_type').then(({ data }) => {
-        const counts: Record<string, number> = {}
-        data?.forEach(d => { counts[d.media_type] = (counts[d.media_type] || 0) + 1 })
-        return counts
-    }),
-  ])
+  const { visits, downloads, dailyVisits, topPages, topDownloads, formatBreakdown, typeBreakdown } =
+    await getTrafficStats()
 
   const stats = [
-    { label: 'Visits Today', value: visits24h.count || 0, icon: Globe, color: 'text-blue-400' },
-    { label: 'Visits 7D', value: visits7d.count || 0, icon: TrendingUp, color: 'text-indigo-400' },
-    { label: 'Visits 30D', value: visits30d.count || 0, icon: Users, color: 'text-purple-400' },
-    { label: 'Downloads Today', value: downloads24h.count || 0, icon: Download, color: 'text-emerald-400' },
-    { label: 'Downloads 7D', value: downloads7d.count || 0, icon: RefreshCcw, color: 'text-teal-400' },
-    { label: 'Downloads 30D', value: downloads30d.count || 0, icon: Layers, color: 'text-cyan-400' },
+    { label: 'Visits Today', value: visits.today, icon: Globe, color: 'text-blue-400' },
+    { label: 'Visits 7D', value: visits.week, icon: TrendingUp, color: 'text-indigo-400' },
+    { label: 'Visits 30D', value: visits.month, icon: Users, color: 'text-purple-400' },
+    { label: 'Downloads Today', value: downloads.today, icon: Download, color: 'text-emerald-400' },
+    { label: 'Downloads 7D', value: downloads.week, icon: RefreshCcw, color: 'text-teal-400' },
+    { label: 'Downloads 30D', value: downloads.month, icon: Layers, color: 'text-cyan-400' },
   ]
 
   return (
@@ -106,7 +70,7 @@ export default async function AnalyticsPage() {
         <div className="flex items-center justify-between">
            <h2 className="text-[11px] font-bold uppercase tracking-[0.3em] text-zinc-500">Visit Velocity (30 Days)</h2>
         </div>
-        <VisitsChart data={dailyVisits.data || []} />
+        <VisitsChart data={dailyVisits} />
       </div>
 
       {/* Tables Row */}
@@ -126,7 +90,7 @@ export default async function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {topPages.data?.map((page: any) => (
+                {topPages.map((page) => (
                   <tr key={page.path} className="hover:bg-white/[0.01]">
                     <td className="px-6 py-4 text-zinc-400 truncate max-w-[200px]">{page.path}</td>
                     <td className="px-6 py-4 text-right text-white font-bold">{(page.visits || 0).toLocaleString()}</td>
@@ -153,7 +117,7 @@ export default async function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {topDownloads.data?.map((dl: any) => (
+                {topDownloads.map((dl) => (
                   <tr key={dl.title} className="hover:bg-white/[0.01]">
                     <td className="px-6 py-4 text-zinc-400 truncate max-w-[150px]">{dl.title}</td>
                     <td className="px-6 py-4">
