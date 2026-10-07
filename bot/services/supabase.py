@@ -88,6 +88,15 @@ async def save_media(
         ttl_seconds = settings.CDN_TTL_HOURS * 3600
         # Save key with expiration
         await r.set(f"media:{link_id}", json.dumps(row), ex=ttl_seconds)
+        # Save long-lived metadata record (30 days) for expired link CTA resolution
+        meta_payload = {
+            "id": link_id,
+            "title": title,
+            "type": media_type,
+            "season": season,
+            "episode": episode,
+        }
+        await r.set(f"media:meta:{link_id}", json.dumps(meta_payload), ex=30 * 86400)
         # Add to recent media list
         await r.lpush("media:recent", json.dumps(row))
         await r.ltrim("media:recent", 0, 199)
