@@ -203,13 +203,23 @@ export default async function LinkPage({
       
       const downloads = details.downloads || []
       if (downloads.length > 0) {
-        // Pick highest resolution available
-        const sorted = downloads.sort((a, b) => (b.resolution || 0) - (a.resolution || 0))
-        if (sorted[0]?.url) {
-          finalUrl = sorted[0].url
-        }
-        if (sorted[0]?.size) {
-          finalSize = sorted[0].size
+        // Match the specific requested resolution (e.g. 480p, 720p, 1080p)
+        const requestedRes = parseInt((row.quality || '').replace(/\D/g, ''), 10) || 0
+        const matched = requestedRes > 0 
+          ? downloads.find(d => Number(d.resolution) === requestedRes)
+          : null
+
+        if (matched) {
+          if (matched.url) finalUrl = matched.url
+          if (matched.size) finalSize = matched.size
+        } else if (row.cdn_url && row.size) {
+          // Retain stored quality-specific URL and size if no exact match in refreshed list
+          finalUrl = row.cdn_url
+          finalSize = row.size
+        } else {
+          const sorted = [...downloads].sort((a, b) => (b.resolution || 0) - (a.resolution || 0))
+          if (sorted[0]?.url) finalUrl = sorted[0].url
+          if (sorted[0]?.size) finalSize = sorted[0].size
         }
         console.log('Refreshed CDN URL via MovieBox Detail')
       }
