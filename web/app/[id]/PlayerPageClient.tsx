@@ -52,7 +52,7 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
         : safe
   }, [row.title, row.type, row.season, row.episode])
 
-  const brandedFilename = displayFilename + ' - SKDL (skdlm.vercel.app)'
+  const brandedFilename = displayFilename + ' - SKDL (skdl.samkiel.dev)'
 
   const handleDownloadMp4 = () => {
     const url = `/download/${row.id}?type=mp4&title=${encodeURIComponent(row.title)}&poster=${encodeURIComponent(posterUrl || '')}&url=${encodeURIComponent(row.cdn_url || '')}&imdb_id=${encodeURIComponent(row.imdb_id || '')}`
