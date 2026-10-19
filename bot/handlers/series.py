@@ -121,7 +121,7 @@ async def process_series_delivery(message: Message, title: str, season: int, epi
         try:
             from aiogram.types import URLInputFile
             from moviebox_api.v1.constants import DOWNLOAD_REQUEST_HEADERS
-            file_name = f"{result['title']} S{result['season']}E{result['episode']} {result['quality']} - SKDL(skdlm.vercel.app).mp4"
+            file_name = f"{result['title']} S{result['season']}E{result['episode']} {result['quality']} - SKDL(skdl.samkiel.dev).mp4"
             await message.answer_document(
                 URLInputFile(str(result["cdn_url"]), filename=file_name, headers=DOWNLOAD_REQUEST_HEADERS),
                 caption=f"📺 {result['title']} S{result['season']}E{result['episode']}"

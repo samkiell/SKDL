@@ -9,7 +9,7 @@ Read this fully before writing any code. Do not deviate from these instructions.
 
 A two-service monorepo:
 1. `bot/` — Python Telegram bot (`@SK_DLBOT`) using aiogram 3.x and Groq AI
-2. `web/` — Next.js 14 link redirect server deployed at `movies.samkiel.dev`
+2. `web/` — Next.js 14 link redirect server deployed at `skdl.samkiel.dev`
 
 Full spec is in `PRD.md`. Read it.
 
