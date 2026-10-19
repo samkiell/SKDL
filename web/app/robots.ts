@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/_next/'],
     },
-    sitemap: 'https://skdlm.vercel.app/sitemap.xml',
+    sitemap: 'https://skdl.samkiel.dev/sitemap.xml',
   }
 }
