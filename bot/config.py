@@ -11,6 +11,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _public_base_url(name: str) -> str:
+    """Return the configured public URL, migrating legacy SKDL domains."""
+    value = os.getenv(name, "https://skdl.samkiel.dev").rstrip("/")
+    for legacy in ("https://skdlm.vercel.app", "http://skdlm.vercel.app", "https://movies.samkiel.dev", "http://movies.samkiel.dev"):
+        if value == legacy or value.startswith(f"{legacy}/"):
+            return value.replace(legacy, "https://skdl.samkiel.dev", 1)
+    return value
+
+
 @dataclass(frozen=True)
 class Settings:
     TELEGRAM_BOT_TOKEN: str
@@ -51,8 +60,8 @@ class Settings:
             TELEGRAM_BOT_TOKEN=token,
             REDIS_URL=redis_url,
             GROQ_API_KEY=groq_key,
-            LINK_BASE_URL=os.getenv("LINK_BASE_URL", "https://skdl.samkiel.dev"),
-            WEB_PROXY_BASE_URL=os.getenv("WEB_PROXY_BASE_URL", "https://skdl.samkiel.dev"),
+            LINK_BASE_URL=_public_base_url("LINK_BASE_URL"),
+            WEB_PROXY_BASE_URL=_public_base_url("WEB_PROXY_BASE_URL"),
             CDN_TTL_HOURS=int(os.getenv("CDN_TTL_HOURS", "6")),
             MOVIEBOX_API_HOST_V2=mb_api_host,
             MOVIEBOX_DOWNLOAD_API_HOST=os.getenv("MOVIEBOX_DOWNLOAD_API_HOST", "h5.aoneroom.com"),
