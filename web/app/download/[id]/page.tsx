@@ -81,7 +81,7 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
       const displayFilename = data.type === 'series' 
         ? `${safeFilename} S${data.season?.toString().padStart(2, '0')}E${data.episode?.toString().padStart(2, '0')}`
         : safeFilename
-      const brandedFilename = displayFilename + ' - SKDL (skdlm.vercel.app)'
+      const brandedFilename = displayFilename + ' - SKDL (skdl.samkiel.dev)'
 
 
       if (data.type === 'srt' || type === 'srt') {
