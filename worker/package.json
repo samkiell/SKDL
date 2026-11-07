@@ -1,0 +1,21 @@
+{
+  "name": "skdl-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SKDL Telegram bot (grammY) running as a Cloudflare Worker with webhooks",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.39.0",
+    "grammy": "^1.30.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261104.1",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.0.0"
+  }
+}

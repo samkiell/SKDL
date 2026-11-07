@@ -85,9 +85,6 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
 
 
       if (data.type === 'srt' || type === 'srt') {
-         const downloadName = `${brandedFilename}.srt`
-         const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(downloadName)}&dl=1`
-         
          // Track SRT Download
          fetch('/api/track/download', {
            method: 'POST',
@@ -101,7 +98,7 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
            keepalive: true
          }).catch(() => {})
 
-         window.location.href = proxyUrl
+         window.location.href = finalUrl
          setLoading(false)
          return
       }
@@ -147,16 +144,12 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
               const muxUrl = `/api/mux?videoUrl=${encodeURIComponent(finalUrl)}&subtitleUrl=${encodeURIComponent(subtitleUrl)}&filename=${encodeURIComponent(brandedFilename)}`
               window.location.href = muxUrl
             } else {
-              // Direct stream download with .mkv extension if subtitles are unavailable
-              const downloadName = `${brandedFilename}.mkv`
-              const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(downloadName)}&dl=1`
-              window.location.href = proxyUrl
+              // Direct stream download from raw CDN URL
+              window.location.href = finalUrl
             }
         } catch (err) {
             console.error('MKV preparation failed, falling back to direct stream:', err)
-            const fallbackName = `${brandedFilename}.mkv`
-            const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(fallbackName)}&dl=1`
-            window.location.href = proxyUrl
+            window.location.href = finalUrl
         } finally {
             setTimeout(() => {
                 setIsMuxing(false)
@@ -166,9 +159,6 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         return
       }
 
-      const downloadName = `${brandedFilename}.mp4`
-      const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}&filename=${encodeURIComponent(downloadName)}&dl=1`
-      
       // Track Download Event (Fire & Forget)
       fetch('/api/track/download', {
         method: 'POST',
@@ -182,7 +172,8 @@ export default function DownloadPage({ params }: { params: Promise<{ id: string 
         keepalive: true
       }).catch(() => {})
 
-      window.location.href = proxyUrl
+      // Direct delivery from raw CDN URL
+      window.location.href = finalUrl
       setLoading(false)
     } catch (err: any) {
       console.error('Download fetch error:', err)

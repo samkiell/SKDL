@@ -164,7 +164,9 @@ export default function PlayerPageClient({ row, proxyUrl }: { row: MediaRow; pro
               {subtitleUrl && (
                   <div className="text-center pt-2">
                       <a 
-                          href={`/api/proxy?url=${encodeURIComponent(subtitleUrl || '')}&filename=${encodeURIComponent(brandedFilename)}.srt&dl=1`} 
+                          href={subtitleUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="text-[10px] font-mono text-zinc-500 hover:text-white transition-colors underline underline-offset-8 decoration-zinc-800 uppercase tracking-widest"
                       >
                           ↓ Download Subtitles (.srt)

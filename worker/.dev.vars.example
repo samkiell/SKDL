@@ -1,0 +1,12 @@
+TELEGRAM_BOT_TOKEN=
+GROQ_API_KEY=
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+# REDIS_URL=rediss://default:<token>@<host>:6379
+LINK_BASE_URL=https://movies.samkiel.dev
+WEB_PROXY_BASE_URL=https://skdlm.vercel.app
+CDN_TTL_HOURS=6
+MOVIEBOX_API_HOST_V2=h5-api.aoneroom.com
+MOVIEBOX_DOWNLOAD_API_HOST=h5.aoneroom.com
+OPENSUBTITLES_API_KEY=
+GROQ_MODEL=openai/gpt-oss-120b

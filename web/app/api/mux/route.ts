@@ -183,19 +183,19 @@ async function handleMuxRequest(request: NextRequest) {
       'pipe:1'
     )
 
-    // Helper fallback URL if FFmpeg fails or cannot stream
-    const fallbackDirectUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}&filename=${encodeURIComponent(filename)}.mkv&dl=1`
+    // Direct CDN fallback URL if FFmpeg fails or cannot stream
+    const fallbackDirectUrl = videoUrl
 
     // Attempt to spawn FFmpeg and wait for initial data chunk or immediate error
     let ffmpeg: any
     try {
       ffmpeg = spawn(ffmpegPath, ffmpegArgs)
     } catch (spawnErr) {
-      console.error('[api/mux] FFmpeg failed to spawn, redirecting to direct stream:', spawnErr)
+      console.error('[api/mux] FFmpeg failed to spawn, redirecting to direct CDN URL:', spawnErr)
       if (hasLoadedSubs) {
         try { fs.unlinkSync(subtitleFile) } catch (_) {}
       }
-      return NextResponse.redirect(new URL(fallbackDirectUrl, request.url))
+      return NextResponse.redirect(fallbackDirectUrl, 302)
     }
 
     let ffmpegLog = ''
@@ -249,14 +249,14 @@ async function handleMuxRequest(request: NextRequest) {
       ffmpeg.on('close', onClose)
     })
 
-    // If FFmpeg exited or timed out without producing any data, fall back immediately to direct proxy stream
+    // If FFmpeg exited or timed out without producing any data, fall back immediately to direct CDN stream
     if (!firstChunk || firstChunk.length === 0) {
-      console.warn('[api/mux] FFmpeg produced 0 bytes, failing over to direct proxy stream download')
+      console.warn('[api/mux] FFmpeg produced 0 bytes, failing over to direct CDN stream download')
       try { ffmpeg.kill('SIGKILL') } catch (_) {}
       if (hasLoadedSubs) {
         try { fs.unlinkSync(subtitleFile) } catch (_) {}
       }
-      return NextResponse.redirect(new URL(fallbackDirectUrl, request.url))
+      return NextResponse.redirect(fallbackDirectUrl, 302)
     }
 
     // FFmpeg is working and has emitted valid data; stream it to the client

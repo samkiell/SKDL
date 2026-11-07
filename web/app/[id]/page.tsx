@@ -1,8 +1,7 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getRedisClient } from '@/lib/redis'
-import { getMovieBoxDetails, searchMovieBox } from '@/lib/moviebox'
+import { getMovieBoxDetails } from '@/lib/moviebox'
 import { Metadata } from 'next'
-import PlayerPageClient from './PlayerPageClient'
 
 interface MediaRow {
   id: string
@@ -187,12 +186,11 @@ export default async function LinkPage({
     return <ExpiredPage title={row.title} type={row.type} season={row.season} episode={row.episode} />
   }
 
-  let finalUrl = row.cdn_url
-  let finalSize = row.size || 0
-  let finalPoster = row.poster_url
+  // Use raw CDN URL resolved by the bot and stored in Redis
+  let targetUrl = row.cdn_url
 
-  // 1. Resolve MovieBox Details (Downloads and Captions)
-  if (row.subject_id) {
+  // Fallback to refresh only if stored CDN URL is absent
+  if (!targetUrl && row.subject_id) {
     try {
       const details = await getMovieBoxDetails(
         row.subject_id,
@@ -200,70 +198,35 @@ export default async function LinkPage({
         row.season || 0,
         row.episode || 0
       )
-      
       const downloads = details.downloads || []
       if (downloads.length > 0) {
-        // Match the specific requested resolution (e.g. 480p, 720p, 1080p)
         const requestedRes = parseInt((row.quality || '').replace(/\D/g, ''), 10) || 0
         const matched = requestedRes > 0 
           ? downloads.find(d => Number(d.resolution) === requestedRes)
           : null
-
-        if (matched) {
-          if (matched.url) finalUrl = matched.url
-          if (matched.size) finalSize = matched.size
-        } else if (row.cdn_url && row.size) {
-          // Retain stored quality-specific URL and size if no exact match in refreshed list
-          finalUrl = row.cdn_url
-          finalSize = row.size
-        } else {
-          const sorted = [...downloads].sort((a, b) => (b.resolution || 0) - (a.resolution || 0))
-          if (sorted[0]?.url) finalUrl = sorted[0].url
-          if (sorted[0]?.size) finalSize = sorted[0].size
-        }
-        console.log('Refreshed CDN URL via MovieBox Detail')
+        targetUrl = matched?.url || downloads[0]?.url || ''
       }
     } catch (e) {
-      console.error('Failed to refresh CDN URL via MovieBox Detail:', e)
+      console.error('Failed to resolve fallback CDN URL:', e)
     }
   }
 
-  // Ensure stored fallbacks are retained if refresh didn't provide new values
-  if (!finalUrl && row.cdn_url) {
-    finalUrl = row.cdn_url
-  }
-  if (!finalSize && row.size) {
-    finalSize = row.size
+  if (!targetUrl) {
+    notFound()
   }
 
-  // 2. Poster Resolution - Strictly MovieBox-first
-  if (!finalPoster && row.title) {
-    try {
-      const searchRes = await searchMovieBox(row.title, row.type)
-      if (searchRes?.cover?.url) {
-        finalPoster = searchRes.cover.url
-        console.log('Found MovieBox Poster via search:', finalPoster)
-      }
-    } catch (e) {
-      console.error('Failed to search MovieBox poster:', e)
-    }
-  }
-
-  // Final fallback poster if MovieBox has absolutely nothing
-  const fallbackPoster = 'https://images.unsplash.com/photo-1574267432553-4b4628081c31?q=80&w=1000&auto=format&fit=crop'
-  if (!finalPoster) {
-      finalPoster = fallbackPoster
-  }
-
-  const proxyUrl = `/api/proxy?url=${encodeURIComponent(finalUrl)}`
-  
-  // Pass metadata to the client
-  const rowForClient = {
-      ...row,
-      cdn_url: finalUrl,
-      poster_url: finalPoster,
-      size: Number(finalSize) || Number(row.size) || 0
-  }
-
-  return <PlayerPageClient row={rowForClient as any} proxyUrl={proxyUrl} />
+  /**
+   * DIRECT CDN DELIVERY (Cloudflare Zero-Proxying):
+   * Issue a 307/302 redirect directly to the raw CDN URL resolved by the bot.
+   * Cloudflare Workers / Pages Functions will never fetch, stream, or proxy video bytes.
+   *
+   * Testing instructions:
+   * 1. After deployment, open a short link in a browser (e.g. skdl.samkiel.dev/[id]).
+   * 2. Confirm it immediately redirects to the CDN URL and native video playback begins.
+   * 3. Check Browser DevTools Network tab:
+   *    - The initial GET /[id] returns HTTP 307 (or 302) with Location: <raw_cdn_url>.
+   *    - The subsequent video byte range requests go directly to the external CDN domain, NOT through Cloudflare.
+   * 4. If the CDN blocks direct requests (e.g. 403 Forbidden without Referer), note the exact error so we can fall back to rate-limited proxy or hybrid Render proxy.
+   */
+  redirect(targetUrl)
 }

@@ -125,7 +125,42 @@ NEXT_PUBLIC_BOT_USERNAME=SK_DLBOT
 
 ---
 
-## Deployment (Railway)
+## Deployment (Cloudflare)
+
+### Bot (`worker/`, Cloudflare Worker, grammY + webhooks)
+
+```bash
+cd worker
+npm install
+npx wrangler secret put TELEGRAM_BOT_TOKEN
+npx wrangler secret put GROQ_API_KEY
+npx wrangler secret put UPSTASH_REDIS_REST_URL
+npx wrangler secret put UPSTASH_REDIS_REST_TOKEN
+# optional: OPENSUBTITLES_API_KEY, LINK_BASE_URL, WEB_PROXY_BASE_URL, CDN_TTL_HOURS,
+#           MOVIEBOX_API_HOST_V2, MOVIEBOX_DOWNLOAD_API_HOST, GROQ_MODEL
+npx wrangler deploy
+```
+
+Then register the webhook (replace values):
+
+```
+https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://<worker-subdomain>.workers.dev/webhook&allowed_updates=["message","callback_query"]
+```
+
+- `GET /` and `GET /health` return the health message; a cron trigger (every minute) refreshes the Redis heartbeat.
+- Conversation history, pending requests and the `/series` flow state live in Redis (Workers are stateless).
+- Direct file delivery downloads the CDN file inside the Worker and is limited to 50 MB (Telegram upload limit and Worker memory). Larger files only get the link.
+
+### Web (`web/`, Cloudflare Pages)
+
+- Build with the Cloudflare Next.js adapter (`@cloudflare/next-on-pages` or OpenNext for Cloudflare); set the build command accordingly.
+- Add the env vars from `web/.env` (including `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`) in the Pages project settings.
+- Server routes (`/api/proxy`, `[id]`) must run on the Workers runtime, so check any Node-only APIs (e.g. `fluent-ffmpeg`) before moving them.
+- Point the custom domain at the Pages project.
+
+---
+
+## Deployment (Railway, legacy Python bot)
 
 Both services deploy from this monorepo as separate Railway services.
 

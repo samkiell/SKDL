@@ -71,10 +71,6 @@ export default async function CollectionPage({
             </thead>
             <tbody className="divide-y divide-white/10">
               {episodes.map(ep => {
-                const safeName = encodeURIComponent(getSafeFilename(ep))
-                // Note: To enforce filename through our proxy: /api/proxy?url=XYZ&filename=XYZ&dl=1
-                const proxyUrl = `/api/proxy?url=${encodeURIComponent(ep.cdn_url)}&filename=${safeName}&dl=1`
-                
                 return (
                   <tr key={ep.id} className="hover:bg-white/5 transition-colors">
                     <td className="px-6 py-4 font-mono">
