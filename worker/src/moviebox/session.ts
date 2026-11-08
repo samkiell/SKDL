@@ -35,8 +35,10 @@ interface StoredCookie {
 class CookieJar {
   private items: StoredCookie[] = [];
 
-  store(url: URL, setCookies: string[]): void {
+  store(url: URL, setCookies: string[] | undefined | null): void {
+    if (!Array.isArray(setCookies) || setCookies.length === 0) return;
     for (const line of setCookies) {
+      if (typeof line !== "string") continue;
       const parts = line.split(";").map((p) => p.trim());
       const eq = parts[0].indexOf("=");
       if (eq <= 0) continue;
@@ -86,17 +88,16 @@ function statusError(resp: Response, url: string): Error {
 
 /** Extracts the response `data` field (port of helpers.process_api_response). */
 function processApiResponse(resp: Response, text: string): unknown {
-  const expected = "application/json";
-  const contentType = resp.headers.get("content-type") ?? "";
-  if (contentType !== expected) {
-    throw new Error(`Unexpect content type '${contentType}' encountered. Expected '${expected}' - BODY ${JSON.stringify(text)}`);
+  const contentType = (resp.headers.get("content-type") ?? "").toLowerCase();
+  if (!contentType.includes("application/json")) {
+    throw new Error(`Unexpected content type '${contentType}' encountered. Expected 'application/json' - BODY ${JSON.stringify(text)}`);
   }
   const j = JSON.parse(text) as JsonObject;
-  if ((j.code ?? 1) === 0 && j.message === "ok") {
+  if ((j.code ?? 1) === 0 && (j.message === "ok" || j.msg === "ok")) {
     return j.data;
   }
   throw new Error(
-    `Unsuccessful response received from server -STATUS ${resp.status} - BODY: ${JSON.stringify(text)}`,
+    `Unsuccessful response received from server - STATUS ${resp.status} - BODY: ${JSON.stringify(text)}`,
   );
 }
 
@@ -129,7 +130,20 @@ export class Session {
       redirect: "manual",
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-    this.jar.store(u, resp.headers.getSetCookie());
+
+    try {
+      let setCookies: string[] = [];
+      if (typeof resp.headers.getSetCookie === "function") {
+        setCookies = resp.headers.getSetCookie();
+      } else {
+        const sc = resp.headers.get("set-cookie");
+        if (sc) setCookies = [sc];
+      }
+      this.jar.store(u, setCookies);
+    } catch {
+      // ignore cookie store failures
+    }
+
     return resp;
   }
 
@@ -166,19 +180,19 @@ export class Session {
       this.moviebox_app_info = cachedAppInfo;
     }
 
-    if (!this.appInfoFetched) {
-      if (!this.userInfo) {
+    if (!this.appInfoFetched || !this.headers.Authorization) {
+      if (!this.userInfo || !this.headers.Authorization) {
         try {
           await this.fetchUserInfo();
-        } catch {
-          // ignored, same as the Python client
+        } catch (e: any) {
+          console.error("fetchUserInfo failed:", e?.message || e);
         }
       }
       if (!this.moviebox_app_info) {
         try {
           await this.fetchAppInfo();
-        } catch {
-          // ignored
+        } catch (e: any) {
+          console.warn("fetchAppInfo failed:", e?.message || e);
         }
       }
       this.appInfoFetched = true;
@@ -205,16 +219,40 @@ export class Session {
     const resp = await this.send("POST", USER_INFO_ENDPOINT, { json: { keyword: "avatar", perPage: 0 } });
     if (!resp.ok) throw statusError(resp, USER_INFO_ENDPOINT);
 
-    const raw = resp.headers.get("x-user");
-    if (!raw) throw new Error("App-info response misses x-user key in headers");
+    let token: string | null = null;
+    let userInfo: UserInfo | null = null;
 
-    const parsed: unknown = JSON.parse(raw);
-    if (!isRecord(parsed) || typeof parsed.token !== "string") {
-      throw new Error("Invalid x-user header");
+    const raw = resp.headers.get("x-user");
+    if (raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        if (isRecord(parsed) && typeof parsed.token === "string") {
+          token = parsed.token;
+          userInfo = parsed as UserInfo;
+        }
+      } catch {
+        // ignore json parse error
+      }
     }
-    this.userInfo = parsed as UserInfo;
+
+    if (!token) {
+      const cookieHeader = resp.headers.get("set-cookie") || "";
+      const match = /token=([^;]+)/.exec(cookieHeader);
+      if (match) {
+        token = match[1];
+        userInfo = { token };
+      }
+    }
+
+    if (!token || !userInfo) {
+      throw new Error(
+        `App-info response misses valid token. Headers: ${JSON.stringify(Object.fromEntries(resp.headers.entries()))}`
+      );
+    }
+
+    this.userInfo = userInfo;
     cachedUserInfo = this.userInfo;
-    this.headers.Authorization = `Bearer ${this.userInfo.token}`;
+    this.headers.Authorization = `Bearer ${token}`;
     return this.userInfo;
   }
 }

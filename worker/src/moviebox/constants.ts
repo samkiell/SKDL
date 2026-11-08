@@ -20,16 +20,18 @@ export function hostUrl(): string {
 }
 
 export const USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 export const DOWNLOAD_REQUEST_REFERER = "https://videodownloader.site/";
 
 /** For media and subtitle files download requests (and the default Session headers). */
 export const DOWNLOAD_REQUEST_HEADERS: Record<string, string> = {
-  Accept: "*/*",
+  Accept: "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9",
   "User-Agent": USER_AGENT,
   Origin: "https://videodownloader.site",
   Referer: DOWNLOAD_REQUEST_REFERER,
+  "X-Client-Info": JSON.stringify({ timezone: "Africa/Nairobi" }),
 };
 
 export const DOWNLOAD_QUALITIES = ["WORST", "BEST", "360P", "480P", "720P", "1080P"];
