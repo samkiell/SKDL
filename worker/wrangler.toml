@@ -2,13 +2,6 @@ name = "skdl-bot"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
-# Replaces the Python heartbeat_loop() (every 60s) from bot/main.py
-[triggers]
-crons = ["* * * * *"]
-
 [vars]
 LINK_BASE_URL = "https://skdl.samkiel.dev"
 CDN_TTL_HOURS = "6"
-MOVIEBOX_API_HOST_V2 = "h5-api.aoneroom.com"
-MOVIEBOX_DOWNLOAD_API_HOST = "h5.aoneroom.com"
-GROQ_MODEL = "openai/gpt-oss-120b"

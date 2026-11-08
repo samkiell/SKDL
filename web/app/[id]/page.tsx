@@ -1,6 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
 import { getRedisClient } from '@/lib/redis'
-import { getMovieBoxDetails } from '@/lib/moviebox'
 import { Metadata } from 'next'
 
 interface MediaRow {
@@ -187,29 +186,7 @@ export default async function LinkPage({
   }
 
   // Use raw CDN URL resolved by the bot and stored in Redis
-  let targetUrl = row.cdn_url
-
-  // Fallback to refresh only if stored CDN URL is absent
-  if (!targetUrl && row.subject_id) {
-    try {
-      const details = await getMovieBoxDetails(
-        row.subject_id,
-        row.type,
-        row.season || 0,
-        row.episode || 0
-      )
-      const downloads = details.downloads || []
-      if (downloads.length > 0) {
-        const requestedRes = parseInt((row.quality || '').replace(/\D/g, ''), 10) || 0
-        const matched = requestedRes > 0 
-          ? downloads.find(d => Number(d.resolution) === requestedRes)
-          : null
-        targetUrl = matched?.url || downloads[0]?.url || ''
-      }
-    } catch (e) {
-      console.error('Failed to resolve fallback CDN URL:', e)
-    }
-  }
+  const targetUrl = row.cdn_url
 
   if (!targetUrl) {
     notFound()

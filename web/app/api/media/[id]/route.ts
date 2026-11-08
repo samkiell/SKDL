@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRedisClient } from '@/lib/redis'
 
 export const dynamic = 'force-dynamic'
-import { getFreshCdnUrl } from '@/lib/moviebox'
 
 interface MediaRow {
   id: string
@@ -13,6 +12,8 @@ interface MediaRow {
   season: number | null
   episode: number | null
   subject_id?: string
+  imdb_id?: string | null
+  size?: number | null
 }
 
 export async function GET(
@@ -30,34 +31,16 @@ export async function GET(
     }
 
     const row = data as MediaRow
-    let finalUrl = row.cdn_url
-
-    if (row.subject_id) {
-      try {
-        finalUrl = await getFreshCdnUrl(
-          row.subject_id,
-          row.type,
-          row.season || 0,
-          row.episode || 0,
-          row.quality
-        )
-      } catch (e) {
-        console.error('Failed to refresh CDN URL for download page:', e)
-        // fallback to row.cdn_url
-      }
-    }
-
-    const resolvedUrl = (finalUrl && finalUrl !== 'undefined' && finalUrl !== 'null') ? finalUrl : row.cdn_url
 
     return NextResponse.json({ 
-      url: resolvedUrl || '',
+      url: row.cdn_url || '',
       title: row.title,
       type: row.type,
       season: row.season,
       episode: row.episode,
       quality: row.quality || '1080p',
-      imdb_id: (row as any).imdb_id || null,
-      size: (row as any).size || null,
+      imdb_id: row.imdb_id || null,
+      size: row.size || null,
       subject_id: row.subject_id || null,
     })
   } catch (err: unknown) {

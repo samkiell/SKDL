@@ -1,44 +1,25 @@
 /**
- * SKDL Bot — Cloudflare Worker entry point.
- * Telegram webhooks (POST /webhook), health check (GET / and /health),
- * short video link redirects (GET /:id and GET /v/:id),
- * and a cron trigger that replaces the Python heartbeat loop.
+ * SKDL Cloudflare Worker — Zero-Proxy Short Link Redirect Service.
+ *
+ * Responsibilities:
+ *  - Short video link redirects (GET /:id and GET /v/:id) -> 302 directly to raw CDN URL
+ *  - Legacy proxy redirect (GET /api/proxy?url=...) -> 302 directly to URL (or 410 if missing)
+ *  - Styled expired page (410) when links exceed TTL
+ *  - Health check (GET / and /health)
+ *
+ * All bot, search, and MovieBox resolution logic runs exclusively on Render.
+ * Cloudflare NEVER fetches, streams, or proxies video bytes.
  */
 
-import type { Update, UserFromGetMe } from "grammy/types";
-
-import { createBot } from "./bot";
 import { initSettings, type Env } from "./config";
-import { getDownloadableFiles, resolveMediaFileToBeDownloaded } from "./moviebox/api";
-import { Session } from "./moviebox/session";
-import { getMedia, getRedis, updateBotHeartbeat } from "./services/supabase";
-import { errMsg, flushBackground } from "./util";
-
-// Reused across requests within an isolate to avoid a getMe call per update.
-let cachedBotInfo: UserFromGetMe | undefined;
-
-async function processUpdate(env: Env, update: Update): Promise<void> {
-  try {
-    const settings = initSettings(env);
-    const bot = createBot(settings.TELEGRAM_BOT_TOKEN, cachedBotInfo);
-    if (!cachedBotInfo) {
-      await bot.init();
-      cachedBotInfo = bot.botInfo;
-    }
-    await bot.handleUpdate(update);
-  } catch (exc) {
-    console.error(`Update ${update.update_id} failed: ${errMsg(exc)}`);
-  } finally {
-    // Wait for fire-and-forget work (e.g. log_event) before the Worker is torn down.
-    await flushBackground();
-  }
-}
+import { getMedia, getRedis } from "./services/supabase";
+import { errMsg } from "./util";
 
 function extractLinkId(pathname: string): string | null {
   const parts = pathname.split("/").filter(Boolean);
   if (parts.length === 1) {
     const id = parts[0];
-    if (id !== "health" && id !== "webhook" && id !== "favicon.ico" && id !== "robots.txt") {
+    if (id !== "health" && id !== "webhook" && id !== "favicon.ico" && id !== "robots.txt" && id !== "api") {
       return id;
     }
   }
@@ -98,82 +79,84 @@ function renderExpiredPage(
       background: #080808;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 1.25rem;
-      padding: 2.25rem;
+      padding: 2.5rem 2rem;
       text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
     }
-    .icon {
-      width: 4rem;
-      height: 4rem;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 1.25rem;
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+    .title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      word-break: break-word;
+    }
+    .desc {
+      font-size: 0.875rem;
+      color: #a1a1aa;
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+    .btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 1.5rem;
-    }
-    .icon svg { width: 2rem; height: 2rem; color: #71717a; }
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      text-transform: uppercase;
-      margin-bottom: 0.35rem;
-    }
-    .code {
-      font-family: monospace;
-      color: #71717a;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.35em;
-      font-weight: 900;
-      margin-bottom: 1.25rem;
-    }
-    .title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #e4e4e7;
-      margin-bottom: 0.5rem;
-    }
-    .desc {
-      font-size: 0.75rem;
-      color: #71717a;
-      font-family: monospace;
-      line-height: 1.5;
-      margin-bottom: 1.75rem;
-    }
-    .btn {
-      display: block;
       width: 100%;
+      padding: 0.875rem 1.25rem;
+      border-radius: 0.75rem;
       background: #ffffff;
       color: #000000;
-      font-size: 11px;
-      font-weight: 900;
-      padding: 1.1rem;
-      border-radius: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 600;
       text-decoration: none;
-      text-transform: uppercase;
-      letter-spacing: 0.2em;
-      box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
-      transition: background 0.2s, transform 0.1s;
+      transition: background-color 0.2s;
     }
-    .btn:hover { background: #e4e4e7; }
-    .btn:active { transform: scale(0.98); }
+    .btn:hover {
+      background: #e4e4e7;
+    }
+    .footer {
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: #71717a;
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-      </svg>
+    <div class="badge">
+      <span>●</span> Link Expired
     </div>
-    <h1>Link Expired</h1>
-    <div class="code">Error 410 // Transmission_Expired</div>
+    <h1>Stream Session Expired</h1>
     <div class="title">${escapeHtml(displayTitle)}</div>
-    <div class="desc">This transmission ID has expired. Tap below to request fresh streaming and download links from the bot.</div>
-    <a href="${escapeHtml(tgUrl)}" target="_blank" rel="noopener noreferrer" class="btn">Request Again on Telegram</a>
+    <p class="desc">
+      To protect bandwidth and keep links fresh, stream sessions expire after 6 hours.
+      Request this title again in Telegram to instantly generate a fresh streaming link.
+    </p>
+    <a href="${tgUrl}" class="btn">
+      Request Fresh Link on Telegram
+    </a>
+    <div class="footer">
+      Powered by SKDL • Direct CDN Delivery
+    </div>
   </div>
 </body>
 </html>`;
@@ -188,23 +171,21 @@ function renderExpiredPage(
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    // Health check
     if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
-      return new Response("SKDL Bot is running", { status: 200 });
+      return new Response("SKDL Redirect Service is running", { status: 200 });
     }
 
-    if (request.method === "POST" && url.pathname === "/webhook") {
-      let update: Update;
-      try {
-        update = (await request.json()) as Update;
-      } catch {
-        return new Response("Bad Request", { status: 400 });
+    // Legacy /api/proxy route -> immediate 302 redirect directly to URL
+    if (request.method === "GET" && url.pathname === "/api/proxy") {
+      const target = url.searchParams.get("url");
+      if (!target || target === "undefined" || target === "null") {
+        return new Response("Gone or Missing URL", { status: 410 });
       }
-      // Acknowledge immediately so Telegram never retries slow (download/search) updates.
-      ctx.waitUntil(processUpdate(env, update));
-      return new Response("ok", { status: 200 });
+      return Response.redirect(target, 302);
     }
 
     // Short-link video redirect flow (GET /:id or GET /v/:id)
@@ -215,7 +196,7 @@ export default {
         const row = await getMedia(linkId);
 
         if (!row) {
-          // Check long-lived metadata record for expired link UI
+          // Check long-lived metadata record for styled expired link UI
           try {
             const r = getRedis();
             const metaRaw = await r.get<string>(`media:meta:${linkId}`);
@@ -237,27 +218,7 @@ export default {
           return renderExpiredPage(row.title, row.type, row.season, row.episode);
         }
 
-        let targetUrl = row.cdn_url;
-
-        // Fallback refresh only if stored CDN URL is absent
-        if (!targetUrl && row.subject_id) {
-          try {
-            const session = new Session();
-            const dummy = { subjectId: row.subject_id, detailPath: "" };
-            const isSeries = row.type === "series";
-            const downloadable = await getDownloadableFiles(
-              session,
-              dummy,
-              isSeries ? (row.season ?? 0) : 0,
-              isSeries ? (row.episode ?? 0) : 0
-            );
-            const file = resolveMediaFileToBeDownloaded(row.quality || "1080p", downloadable);
-            if (file?.url) targetUrl = file.url;
-          } catch (e) {
-            console.error("Worker fallback resolve failed:", errMsg(e));
-          }
-        }
-
+        const targetUrl = row.cdn_url;
         if (!targetUrl) {
           return new Response("Video URL unavailable", { status: 404 });
         }
@@ -265,25 +226,12 @@ export default {
         /**
          * DIRECT CDN DELIVERY:
          * Issue a 302 redirect directly to the raw CDN URL resolved by the bot.
-         * Video bytes stream directly from the CDN to the browser, bypassing Cloudflare entirely.
+         * Video bytes stream directly from the CDN to the client, bypassing Cloudflare entirely.
          */
         return Response.redirect(targetUrl, 302);
       }
     }
 
     return new Response("Not Found", { status: 404 });
-  },
-
-  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(
-      (async () => {
-        try {
-          initSettings(env);
-          await updateBotHeartbeat();
-        } catch {
-          // same as the Python heartbeat loop: never raise
-        }
-      })(),
-    );
   },
 } satisfies ExportedHandler<Env>;

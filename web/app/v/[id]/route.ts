@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRedisClient } from '@/lib/redis'
-import { getMovieBoxDetails } from '@/lib/moviebox'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,28 +40,7 @@ export async function GET(
       return new NextResponse('Link expired', { status: 410 })
     }
 
-    let targetUrl = row.cdn_url
-
-    if (!targetUrl && row.subject_id) {
-      try {
-        const details = await getMovieBoxDetails(
-          row.subject_id,
-          row.type,
-          row.season || 0,
-          row.episode || 0
-        )
-        const downloads = details.downloads || []
-        if (downloads.length > 0) {
-          const requestedRes = parseInt((row.quality || '').replace(/\D/g, ''), 10) || 0
-          const matched = requestedRes > 0
-            ? downloads.find(d => Number(d.resolution) === requestedRes)
-            : null
-          targetUrl = matched?.url || downloads[0]?.url || ''
-        }
-      } catch (e) {
-        console.error('Failed to resolve fallback CDN URL in /v/[id]:', e)
-      }
-    }
+    const targetUrl = row.cdn_url
 
     if (!targetUrl) {
       return new NextResponse('Video URL unavailable', { status: 404 })
