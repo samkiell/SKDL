@@ -3,5 +3,5 @@ main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
 [vars]
-LINK_BASE_URL = "https://skdl.samkiel.dev"
+LINK_BASE_URL = "https://skdl-bot.samuelezekiel488.workers.dev"
 CDN_TTL_HOURS = "6"

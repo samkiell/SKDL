@@ -13,10 +13,11 @@ load_dotenv()
 
 def _public_base_url(name: str) -> str:
     """Return the configured public URL, migrating legacy SKDL domains."""
-    value = os.getenv(name, "https://skdl.samkiel.dev").rstrip("/")
+    default_url = "https://skdl-bot.samuelezekiel488.workers.dev"
+    value = os.getenv(name, default_url).rstrip("/")
     for legacy in ("https://skdlm.vercel.app", "http://skdlm.vercel.app", "https://movies.samkiel.dev", "http://movies.samkiel.dev"):
         if value == legacy or value.startswith(f"{legacy}/"):
-            return value.replace(legacy, "https://skdl.samkiel.dev", 1)
+            return value.replace(legacy, default_url, 1)
     return value
 
 
